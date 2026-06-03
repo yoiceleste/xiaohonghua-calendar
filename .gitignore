@@ -1,8 +1,16 @@
 # 不需要上传的文件
 .uploads/
 *.py
-*.png
 *.jpg
+
+# 只排除开发用的png，保留花朵素材
+flower_border_preview.png
+flower_corner.png
+flower_fullres.png
+flower_fullres_white_border.png
+flower_user_base.png
+flower_fab_optionE.png
+flower_fab_plus.png
 
 # 旧版本HTML（只保留v8a系列）
 xiaohonghua_v3.html

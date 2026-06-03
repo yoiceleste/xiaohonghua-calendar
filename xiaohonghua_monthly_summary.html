@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="小红花">
+<meta name="theme-color" content="#E95D5D">
+<link rel="manifest" href="/manifest.json">
+<title>月总结 - 小红花日历</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  .phone-frame {
+    width: 375px;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 812px;
+    background: #FFFBF0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .dynamic-island {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 36px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 100;
+  }
+
+  .status-bar {
+    height: 54px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #8B7E74;
+  }
+  .status-bar .time { font-size: 15px; font-weight: 600; }
+  .status-bar .icons { display: flex; gap: 5px; align-items: center; }
+  .status-bar .icons svg { width: 16px; height: 16px; }
+
+  /* Header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 20px 0;
+  }
+  .back-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(200,180,160,0.15); }
+  .back-btn svg { width: 20px; height: 20px; color: #8B7E74; }
+  .share-btn {
+    font-size: 14px;
+    font-weight: 500;
+    color: #8B7E74;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 20px;
+    transition: background 0.2s;
+    font-family: inherit;
+  }
+  .share-btn:hover { background: rgba(200,180,160,0.12); }
+
+  /* Page Title */
+  .page-title-section {
+    text-align: center;
+    padding: 12px 20px 14px;
+  }
+  .page-title-section h1 {
+    font-size: 17px;
+    font-weight: 500;
+    color: #6B5E54;
+    letter-spacing: 1px;
+  }
+  .page-title-section .month-label {
+    font-size: 24px;
+    font-weight: 600;
+    color: #4A3F37;
+    margin-top: 4px;
+    letter-spacing: 2px;
+  }
+
+  /* Scrollable content */
+  .content {
+    padding: 0 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    height: calc(100vh - 180px);
+    max-height: calc(812px - 180px);
+  }
+  .content::-webkit-scrollbar { display: none; }
+
+  /* ========== Flower Hero ========== */
+  .flower-hero {
+    text-align: center;
+    padding: 16px 0 20px;
+    position: relative;
+  }
+  .flower-hero .flower-icon {
+    width: 72px;
+    height: 72px;
+    display: inline-block;
+    margin-bottom: 10px;
+    transform: rotate(-8deg);
+    filter: drop-shadow(0 3px 6px rgba(232,93,93,0.2)) drop-shadow(0 0 10px rgba(255,200,180,0.15));
+  }
+  .flower-hero .flower-count {
+    font-size: 48px;
+    font-weight: 700;
+    color: #E85D5D;
+    line-height: 1;
+    letter-spacing: -1px;
+    text-shadow: 0 2px 4px rgba(232,93,93,0.15);
+  }
+  .flower-hero .flower-unit {
+    font-size: 16px;
+    font-weight: 400;
+    color: #B0A498;
+    margin-left: 4px;
+  }
+  .flower-hero .flower-label {
+    font-size: 13px;
+    color: #B0A498;
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+  }
+  /* Hand-drawn stars around flower */
+  .star-deco {
+    position: absolute;
+    font-size: 16px;
+    color: #F0C040;
+    opacity: 0.6;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  .star-deco:nth-child(1) { top: 10px; left: 18%; transform: rotate(15deg); animation-delay: 0s; }
+  .star-deco:nth-child(2) { top: 20px; right: 15%; transform: rotate(-20deg); animation-delay: 1s; font-size: 12px; }
+  .star-deco:nth-child(3) { bottom: 30px; left: 12%; transform: rotate(30deg); animation-delay: 0.5s; font-size: 14px; }
+  .star-deco:nth-child(4) { bottom: 20px; right: 10%; transform: rotate(-10deg); animation-delay: 1.5s; font-size: 11px; }
+  .star-deco:nth-child(5) { top: 50%; left: 8%; transform: rotate(45deg); animation-delay: 2s; font-size: 10px; }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.15); }
+  }
+
+  /* ========== Stats Cards - sticky note style ========== */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 0 16px;
+  }
+  .stat-card {
+    background: #FFF8EE;
+    border-radius: 4px;
+    padding: 14px 12px;
+    text-align: center;
+    position: relative;
+    box-shadow:
+      2px 2px 6px rgba(200,180,160,0.08), 0 1px 2px rgba(200,180,160,0.06);
+    transform: rotate(var(--rotate, 0deg));
+    transition: transform 0.2s;
+  }
+  .stat-card:nth-child(1) { --rotate: -0.8deg; }
+  .stat-card:nth-child(2) { --rotate: 0.6deg; }
+  .stat-card:nth-child(3) { --rotate: 0.5deg; }
+  .stat-card:nth-child(4) { --rotate: -0.6deg; }
+  /* Subtle lined paper effect on cards */
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 18px,
+      rgba(200,180,160,0.08) 18px,
+      rgba(200,180,160,0.08) 19px
+    );
+    pointer-events: none;
+    border-radius: 4px;
+  }
+  .stat-card .stat-icon {
+    font-size: 18px;
+    margin-bottom: 4px;
+    position: relative;
+    z-index: 1;
+  }
+  .stat-card .stat-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: #4A3F37;
+    line-height: 1.2;
+    position: relative;
+    z-index: 1;
+  }
+  .stat-card .stat-value .stat-small {
+    font-size: 12px;
+    font-weight: 400;
+    color: #8B7E74;
+  }
+  .stat-card .stat-label {
+    font-size: 11px;
+    color: #B0A498;
+    margin-top: 3px;
+    letter-spacing: 0.3px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ========== Highlights - notebook card style ========== */
+  .highlights-card {
+    background: #FFF9F0;
+    border-radius: 6px;
+    padding: 16px;
+    position: relative;
+    box-shadow:
+      2px 3px 8px rgba(200,180,160,0.1), 0 1px 2px rgba(200,180,160,0.05);
+    margin-bottom: 16px;
+  }
+  /* Left margin line */
+  .highlights-card::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 40px;
+    bottom: 8px;
+    width: 1px;
+    background: rgba(232,93,93,0.08);
+    pointer-events: none;
+  }
+  .highlights-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6B5E54;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+    padding-left: 48px;
+  }
+  .highlight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 0 9px 48px;
+    border-bottom: 1px dashed #F0EAE4;
+    position: relative;
+  }
+  .highlight-item:last-child {
+    border-bottom: none;
+  }
+  .highlight-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(232,93,93,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .highlight-check svg {
+    width: 12px;
+    height: 12px;
+    color: #E85D5D;
+  }
+  .highlight-text {
+    font-size: 14px;
+    color: #4A3F37;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  /* ========== Hand-drawn smiley ========== */
+  .hand-drawn-smiley {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    opacity: 0.25;
+  }
+  .hand-drawn-smiley svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ========== Closing section ========== */
+  .closing-section {
+    text-align: center;
+    padding: 4px 0 8px;
+    position: relative;
+  }
+  .closing-text {
+    font-size: 14px;
+    color: #8B7E74;
+    font-weight: 300;
+    line-height: 2;
+    letter-spacing: 1px;
+    font-style: italic;
+  }
+  /* Small decorative elements around closing */
+  .closing-deco {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .closing-deco .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #DDD4C8;
+  }
+  .closing-deco .mini-flower {
+    width: 14px;
+    height: 14px;
+    opacity: 0.35;
+    transform: rotate(15deg);
+  }
+
+  /* ========== Bottom spacing ========== */
+  .bottom-space { height: 40px; }
+
+  /* ========== Paper texture ========== */
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(ellipse at 15% 30%, rgba(245,230,200,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 70%, rgba(240,225,195,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 10%, rgba(245,235,210,0.04) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .phone-frame > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ========== Tape decoration ========== */
+  .tape {
+    position: relative;
+    margin: 0 8px;
+  }
+  .tape::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    width: 48px;
+    height: 14px;
+    background: rgba(240,225,195,0.5);
+    border-radius: 2px;
+    z-index: 2;
+    box-shadow: 0 1px 2px rgba(180,160,140,0.1);
+  }
+  .highlights-card::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 24px;
+    width: 52px;
+    height: 14px;
+    background: rgba(240,225,195,0.45);
+    border-radius: 2px;
+    transform: rotate(-3deg);
+    box-shadow: 0 1px 2px rgba(180,160,140,0.1);
+  }
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="dynamic-island"></div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24" fill="#8B7E74"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+      <svg viewBox="0 0 24 24" fill="#8B7E74"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </div>
+    <button class="share-btn">分享</button>
+    <button class="share-btn" id="exportBtn" style="margin-left:6px;">导出数据</button>
+  </div>
+
+  <!-- Page Title -->
+  <div class="page-title-section">
+    <h1>月总结</h1>
+    <div class="month-label">6月总结</div>
+  </div>
+
+  <!-- Scrollable Content -->
+  <div class="content">
+
+    <!-- Flower Hero with stars -->
+    <div class="flower-hero">
+      <span class="star-deco">✦</span>
+      <span class="star-deco">✧</span>
+      <span class="star-deco">✦</span>
+      <span class="star-deco">✧</span>
+      <span class="star-deco">✦</span>
+      <img class="flower-icon" src="flower_hero.png" alt="">
+      <div>
+        <span class="flower-count">89</span>
+        <span class="flower-unit">朵</span>
+      </div>
+      <div class="flower-label">小红花</div>
+    </div>
+
+    <!-- Stats Grid - sticky note style -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">☑</div>
+        <div class="stat-value">89<span class="stat-small"> 个</span></div>
+        <div class="stat-label">完成任务</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-value">6月21日</div>
+        <div class="stat-label">最忙的一天</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-value">23:47</div>
+        <div class="stat-label">最晚结束</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value">2.9<span class="stat-small"> 个/天</span></div>
+        <div class="stat-label">日均完成</div>
+      </div>
+    </div>
+
+    <!-- Highlights Card with tape -->
+    <div class="highlights-card">
+      <div class="highlights-title">✨ 本月高光</div>
+      <div class="highlight-item">
+        <div class="highlight-check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="highlight-text">东京旅行</div>
+      </div>
+      <div class="highlight-item">
+        <div class="highlight-check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="highlight-text">完成项目汇报</div>
+      </div>
+      <div class="highlight-item">
+        <div class="highlight-check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="highlight-text">连续学习英语18天</div>
+      </div>
+      <!-- Hand-drawn smiley -->
+      <div class="hand-drawn-smiley">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#C8BCB0" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="20" cy="20" r="14"/>
+          <circle cx="15" cy="17" r="1.5" fill="#C8BCB0"/>
+          <circle cx="25" cy="17" r="1.5" fill="#C8BCB0"/>
+          <path d="M14 25c2 3 10 3 12 0"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Closing -->
+    <div class="closing-section">
+      <div class="closing-text">
+        在平淡冗长的日子里，<br>坚持闪闪发光
+      </div>
+      <div class="closing-deco">
+        <span class="dot"></span>
+        <img class="mini-flower" src="flower_todo.png" alt="">
+        <span class="dot"></span>
+      </div>
+    </div>
+
+    <div class="bottom-space"></div>
+  </div>
+
+</div>
+
+<script src="store.js"></script>
+<script>
+  // ========== 月总结动态渲染 ==========
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const monthParam = urlParams.get('month') || EventStore.currentMonthStr();
+
+  function renderMonthlySummary() {
+    const stats = EventStore.getMonthStats(monthParam);
+
+    // 更新月份标题
+    const monthLabel = document.querySelector('.month-label');
+    if (monthLabel) monthLabel.textContent = EventStore.formatMonth(monthParam);
+
+    // 更新花朵数量
+    const flowerCount = document.querySelector('.flower-count');
+    if (flowerCount) flowerCount.textContent = stats.flowerCount;
+
+    // 更新统计卡片
+    const statCards = document.querySelectorAll('.stat-card .stat-value');
+    if (statCards[0]) statCards[0].innerHTML = `${stats.done}<span class="stat-small"> 个</span>`;
+    if (statCards[1]) statCards[1].textContent = stats.busiestDay ? EventStore.formatDate(stats.busiestDay) : '—';
+    if (statCards[2]) statCards[2].textContent = stats.latestEnd || '—';
+    if (statCards[3]) statCards[3].innerHTML = `${stats.dailyAvg}<span class="stat-small"> 个/天</span>`;
+
+    // 更新高光列表
+    const highlightsContainer = document.querySelector('.highlights-card');
+    if (highlightsContainer) {
+      // 保留标题和笑脸，替换列表项
+      const existingItems = highlightsContainer.querySelectorAll('.highlight-item');
+      existingItems.forEach(item => item.remove());
+
+      const titleEl = highlightsContainer.querySelector('.highlights-title');
+      const smileyEl = highlightsContainer.querySelector('.hand-drawn-smiley');
+
+      if (stats.highlights.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'padding:12px 0 12px 48px;color:#D8CEC4;font-size:13px;';
+        emptyDiv.textContent = '完成重点事项后会显示在这里';
+        highlightsContainer.insertBefore(emptyDiv, smileyEl);
+      } else {
+        stats.highlights.forEach(text => {
+          const item = document.createElement('div');
+          item.className = 'highlight-item';
+          item.innerHTML = `
+            <div class="highlight-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div class="highlight-text">${text}</div>
+          `;
+          highlightsContainer.insertBefore(item, smileyEl);
+        });
+      }
+    }
+
+    // 更新结尾文字
+    const closingText = document.querySelector('.closing-text');
+    if (closingText && stats.done > 0) {
+      closingText.innerHTML = `在平淡冗长的日子里，<br>坚持闪闪发光`;
+    }
+  }
+
+  // 返回按钮
+  const backBtn = document.querySelector('.back-btn');
+  if (backBtn) {
+    backBtn.style.cursor = 'pointer';
+    backBtn.addEventListener('click', () => {
+      window.location.href = 'xiaohonghua_v8a.html';
+    });
+  }
+
+  // 分享按钮（截图提示）
+  const shareBtn = document.querySelector('.share-btn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', () => {
+      const toast = document.createElement('div');
+      toast.textContent = '长按页面可截图分享';
+      toast.style.cssText = `
+        position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+        background:rgba(74,63,55,0.9);color:#FFF;padding:12px 24px;border-radius:20px;
+        font-size:14px;z-index:300;opacity:0;transition:opacity 0.2s;font-family:inherit;
+      `;
+      document.body.appendChild(toast);
+      requestAnimationFrame(() => toast.style.opacity = '1');
+      setTimeout(() => toast.remove(), 1500);
+    });
+  }
+
+  // 导出数据按钮
+  const exportBtn = document.getElementById('exportBtn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      const result = EventStore.exportData();
+      const toast = document.createElement('div');
+      toast.textContent = `已导出 ${result.stats.totalEvents} 条数据 📦`;
+      toast.style.cssText = `
+        position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+        background:rgba(74,63,55,0.9);color:#FFF;padding:12px 24px;border-radius:20px;
+        font-size:14px;z-index:300;opacity:0;transition:opacity 0.2s;font-family:inherit;
+      `;
+      document.body.appendChild(toast);
+      requestAnimationFrame(() => toast.style.opacity = '1');
+      setTimeout(() => toast.remove(), 1500);
+    });
+  }
+
+  renderMonthlySummary();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+</script>
+
+</body>
+</html>

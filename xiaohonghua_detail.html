@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="小红花">
+<meta name="theme-color" content="#E95D5D">
+<link rel="manifest" href="/manifest.json">
+<title>6月2日 - 小红花日历</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  .phone-frame {
+    width: 375px;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 812px;
+    background: #FFFBF0;
+    overflow: hidden;
+    position: relative;
+  }
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 15% 30%, rgba(245,230,200,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 70%, rgba(240,225,195,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 10%, rgba(245,235,210,0.04) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .phone-frame > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .dynamic-island {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 36px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 100;
+  }
+
+  .status-bar {
+    height: 54px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4A3F37;
+  }
+  .status-bar .time { font-size: 15px; font-weight: 600; }
+  .status-bar .icons { display: flex; gap: 5px; align-items: center; }
+  .status-bar .icons svg { width: 16px; height: 16px; }
+
+  /* Header with search and FAB */
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 16px 8px;
+  }
+  .search-box {
+    flex: 1;
+    height: 32px;
+    background: #FFF8F0;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 6px;
+    margin-right: 12px;
+  }
+  .search-box svg {
+    width: 14px;
+    height: 14px;
+    color: #A09890;
+  }
+  .search-box input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #6B5E54;
+    outline: none;
+  }
+  .search-box input::placeholder {
+    color: #A09890;
+  }
+  .back-btn {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .fab-container {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    filter: drop-shadow(0 2px 6px rgba(232,93,93,0.3)) drop-shadow(0 0 8px rgba(255,200,180,0.2));
+  }
+  .fab-container:hover { transform: scale(1.1); }
+  .fab-container:active { transform: scale(0.95); }
+  .fab-top {
+    width: 40px;
+    height: 40px;
+  }
+  .fab-plus {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 22px;
+    height: 22px;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+  }
+
+  /* Date info */
+  .date-info {
+    padding: 0 20px 8px;
+    text-align: center;
+  }
+  .date-info .day {
+    font-size: 32px;
+    font-weight: 700;
+    color: #E85D5D;
+  }
+  .date-info .full-date {
+    font-size: 15px;
+    color: #6B5E54;
+    margin-top: 2px;
+    font-weight: 500;
+  }
+  .date-info .lunar-date {
+    font-size: 12px;
+    color: #C8956C;
+    margin-top: 3px;
+    font-weight: 400;
+  }
+
+  /* Main content: left-right split */
+  .main-content {
+    display: flex;
+    height: calc(100vh - 180px);
+    max-height: calc(812px - 180px);
+    overflow: hidden;
+  }
+
+  /* Left: Timeline */
+  .timeline-section {
+    width: 45%;
+    border-right: 1px dashed #F5EDE5;
+    overflow-y: auto;
+    padding: 10px 0;
+    position: relative;
+  }
+  .timeline-section::-webkit-scrollbar { display: none; }
+
+  .hour-slot {
+    display: flex;
+    align-items: flex-start;
+    padding: 0 8px 0 12px;
+    min-height: 44px;
+    position: relative;
+  }
+  .hour-label {
+    width: 32px;
+    font-size: 10px;
+    color: #B8ADA4;
+    font-weight: 500;
+    padding-top: 2px;
+  }
+  .hour-content {
+    flex: 1;
+    position: relative;
+    min-height: 44px;
+  }
+  .hour-line {
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #FAF6F2;
+  }
+  .hour-slot.current .hour-label {
+    color: #E85D5D;
+    font-weight: 600;
+  }
+  .hour-slot.current .hour-line {
+    background: #FFE8E0;
+  }
+
+  /* Schedule items on timeline */
+  .schedule-item {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 10px;
+    padding: 4px 6px;
+    font-size: 9px;
+    font-weight: 500;
+    color: #FFF;
+    box-shadow: 0 1px 3px rgba(200,180,160,0.12);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    z-index: 2;
+  }
+  .schedule-coral { background: #FFB3AB; }
+  .schedule-yellow { background: #FFE082; color: #8B6914; }
+  .schedule-blue { background: #B3E5FC; }
+  .schedule-lavender { background: #E1BEE7; }
+  .schedule-mint { background: #C8E6C9; }
+  .schedule-rose { background: #F8BBD0; }
+
+  /* Current time indicator - positioned within timeline only */
+  .current-time-line {
+    position: absolute;
+    left: 44px;
+    right: 8px;
+    height: 2px;
+    background: #E85D5D;
+    z-index: 10;
+    border-radius: 1px;
+    pointer-events: none;
+  }
+  .current-time-dot {
+    position: absolute;
+    left: -5px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    background: #E85D5D;
+    border-radius: 50%;
+  }
+
+  /* Right: Todo Section */
+  .todo-section {
+    width: 55%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .todo-header {
+    padding: 10px 12px 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid #FAF6F2;
+  }
+  .todo-header img {
+    width: 16px;
+    height: 16px;
+  }
+  .todo-header .title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4A3F37;
+  }
+  .todo-header .count {
+    background: #E85D5D;
+    color: #FFF;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+  }
+
+  .todo-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px;
+  }
+  .todo-list::-webkit-scrollbar { display: none; }
+
+  /* Todo category headers */
+  .todo-category {
+    font-size: 10px;
+    color: #A09890;
+    font-weight: 500;
+    margin: 8px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .todo-category:first-child { margin-top: 0; }
+  .todo-category .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+  .dot-star { background: #E8A040; }
+  .dot-normal { background: #A0A0A0; }
+  .dot-done { background: #D0D0D0; }
+
+  /* Todo cards */
+  .todo-card {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    background: #FFF9F0;
+    border-radius: 14px;
+    gap: 6px;
+    margin-bottom: 6px;
+    box-shadow: 0 1px 3px rgba(200,180,160,0.1), 0 0 0 1px rgba(245,237,232,0.6);
+    border: 1px solid rgba(245,237,232,0.8);
+    position: relative;
+    cursor: grab;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .todo-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(200,180,160,0.12);
+  }
+  .todo-card:active { cursor: grabbing; }
+  .todo-card.dragging {
+    opacity: 0.6;
+    transform: rotate(2deg);
+  }
+
+  .todo-card img {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+  .todo-card .text,
+  .todo-card-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: #4A3F37;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .todo-card.done .text,
+  .todo-card.done .todo-card-title {
+    color: #B8ADA4;
+    text-decoration: line-through;
+  }
+  .todo-card .tag,
+  .todo-tag {
+    font-size: 8px;
+    padding: 1px 5px;
+    border-radius: 6px;
+    font-weight: 500;
+    flex-shrink: 0;
+    white-space: nowrap;
+    display: inline-block;
+    line-height: 1.4;
+  }
+  .tag-star { background: #FFF0E0; color: #E8A040; }
+  .tag-normal { background: #F0F0F0; color: #A0A0A0; }
+  .tag-done { background: #F5F5F5; color: #B8ADA4; }
+  .todo-card .drag-handle {
+    color: #E0D8D0;
+    font-size: 12px;
+  }
+
+  /* Washi Tape */
+  .washi-tape {
+    position: absolute;
+    width: 32px;
+    height: 10px;
+    border-radius: 2px;
+    opacity: 0.4;
+    z-index: 2;
+    background: rgba(240,225,195,0.6);
+    box-shadow: 0 1px 2px rgba(180,160,140,0.1);
+  }
+
+  /* Drop zone indicator */
+  .drop-zone {
+    border: 2px dashed #FFE0D5;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 6px;
+    text-align: center;
+    color: #E8B0A8;
+    font-size: 10px;
+    background: #FFFCFA;
+    display: none;
+  }
+  .drop-zone.active { display: block; }
+
+  /* Bottom: Flower count */
+  .flower-count-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: linear-gradient(to top, rgba(255,251,240,0.98), rgba(255,251,240,0.9));
+    border-top: 1px solid #F8F0EA;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 40;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .flower-count-bar img {
+    width: 24px;
+    height: 24px;
+  }
+  .flower-count-bar .text {
+    font-size: 14px;
+    color: #E85D5D;
+    font-weight: 500;
+  }
+  .flower-count-bar .count {
+    font-size: 18px;
+    font-weight: 700;
+    color: #E85D5D;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="dynamic-island"></div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24" fill="#333"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+      <svg viewBox="0 0 24 24" fill="#333"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+    </div>
+  </div>
+
+  <!-- Header with Search and FAB -->
+  <div class="app-header">
+    <div class="back-btn" id="backToHome" style="cursor:pointer;display:flex;align-items:center;gap:2px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#8B7E74" stroke-width="2" stroke-linecap="round" width="20" height="20">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+      <span style="font-size:13px;color:#8B7E74;font-weight:400;">周历</span>
+    </div>
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" placeholder="搜索日程或Todo...">
+    </div>
+    <div class="fab-container">
+      <img class="fab-top" src="flower_fab_optionA.png" alt="新增">
+      <div class="fab-plus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round">
+          <line x1="12" y1="6" x2="12" y2="18"/>
+          <line x1="6" y1="12" x2="18" y2="12"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Date Info -->
+  <div class="date-info">
+    <div class="day">星期日</div>
+    <div class="full-date">2026年6月2日</div>
+    <div class="lunar-date">农历 四月十六</div>
+  </div>
+
+  <!-- Main Content: Timeline + Todo -->
+  <div class="main-content">
+
+    <!-- Left: Timeline -->
+    <div class="timeline-section">
+      <!-- Current time indicator (9:41) - positioned within timeline only -->
+      <div class="current-time-line" style="top: 436px;">
+        <div class="current-time-dot"></div>
+      </div>
+
+      <!-- Hour slots -->
+      <div class="hour-slot">
+        <span class="hour-label">00</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">01</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">02</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">03</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">04</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">05</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">06</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">07</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">08</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot current">
+        <span class="hour-label">09</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">10</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">11</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">12</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">13</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">14</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">15</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">16</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">17</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">18</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">19</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">20</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">21</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">22</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot">
+        <span class="hour-label">23</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+    </div>
+
+    <!-- Right: Todo List -->
+    <div class="todo-section">
+      <div class="todo-header">
+        <img src="flower_todo.png" alt="花">
+        <span class="title">今日Todo</span>
+        <span class="count">0</span>
+      </div>
+
+      <div class="todo-list">
+        <!-- ⭐ 重点 -->
+        <div class="todo-category">
+          <span class="dot dot-star"></span>
+          重点
+        </div>
+        <div class="todo-category">
+          <span class="dot dot-normal"></span>
+          普通
+        </div>
+        <div class="todo-category">
+          <span class="dot dot-done"></span>
+          已完成
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom: Flower Count -->
+  <div class="flower-count-bar">
+    <span class="text">今日已获得</span>
+    <span class="count">3</span>
+    <span class="text">朵花</span>
+    <img src="flower_todo.png" alt="花">
+  </div>
+
+</div>
+
+<script src="store.js"></script>
+<script>
+  // ========== 日视图 + 日程引擎 ==========
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const viewDate = urlParams.get('date') || EventStore.todayStr();
+  const scheduleColors = ['schedule-coral','schedule-yellow','schedule-blue','schedule-lavender','schedule-mint','schedule-rose'];
+  const HOUR_HEIGHT = 60; // 每小时高度px
+  const TIMELINE_START = 6; // timeline起始小时
+
+  // 拖拽状态
+  let draggedEventId = null;
+  let dragSourceType = null; // 'todo' | 'schedule'
+
+  function updateDateInfo() {
+    const d = new Date(viewDate);
+    const dayEl = document.querySelector('.date-info .day');
+    const fullDateEl = document.querySelector('.date-info .full-date');
+    if (dayEl) dayEl.textContent = `星期${'日一二三四五六'[d.getDay()]}`;
+    if (fullDateEl) fullDateEl.textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+    document.title = `${d.getMonth()+1}月${d.getDate()}日 - 小红花日历`;
+  }
+
+  // 渲染时间线（支持拖拽drop）
+  function renderTimeline() {
+    const timeline = document.querySelector('.timeline-section');
+    if (!timeline) return;
+
+    // 执行引擎
+    const dayEvents = EventStore.engineRun(viewDate);
+    const schedules = dayEvents.filter(e => e.type === 'schedule' && e.startTime)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+    // 清除旧的schedule覆盖层
+    const oldOverlay = timeline.querySelector('.schedule-overlay');
+    if (oldOverlay) oldOverlay.remove();
+
+    // 设置每个hour-slot高度
+    document.querySelectorAll('.hour-slot').forEach(slot => {
+      const label = slot.querySelector('.hour-label');
+      if (!label) return;
+      const content = slot.querySelector('.hour-content');
+      if (content) content.innerHTML = '<div class="hour-line"></div>';
+      slot.style.minHeight = HOUR_HEIGHT + 'px';
+      slot.style.position = 'relative';
+    });
+
+    // 创建schedule覆盖层（absolute定位在整个timeline上）
+    if (schedules.length > 0) {
+      const overlay = document.createElement('div');
+      overlay.className = 'schedule-overlay';
+      overlay.style.cssText = 'position:absolute;top:0;left:44px;right:8px;pointer-events:none;z-index:5;';
+
+      schedules.forEach((e) => {
+        const globalIdx = schedules.indexOf(e);
+        const color = scheduleColors[globalIdx % scheduleColors.length];
+        const conflictClass = e.conflict ? ' conflict' : '';
+
+        // 计算top和height
+        const [startH, startM] = (e.startTime || '09:00').split(':').map(Number);
+        const [endH, endM] = (e.endTime || EventStore.addHour(e.startTime || '09:00', 1)).split(':').map(Number);
+        const startMinutes = (startH - TIMELINE_START) * 60 + startM;
+        const durationMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+        const topPx = (startMinutes / 60) * HOUR_HEIGHT;
+        const heightPx = Math.max((durationMinutes / 60) * HOUR_HEIGHT, 24);
+
+        const div = document.createElement('div');
+        div.className = `schedule-item ${color}${conflictClass}`;
+        div.draggable = true;
+        div.dataset.eventId = e.id;
+        div.dataset.eventType = 'schedule';
+        div.style.cssText = `position:absolute;top:${topPx}px;height:${heightPx}px;pointer-events:auto;cursor:pointer;display:flex;align-items:center;`;
+        div.innerHTML = `
+          <span class="schedule-title">${e.title}</span>
+          ${e.conflict ? '<span class="conflict-badge">⚠</span>' : ''}
+        `;
+
+        // schedule拖拽开始
+        div.addEventListener('dragstart', (ev) => {
+          draggedEventId = e.id;
+          dragSourceType = 'schedule';
+          ev.dataTransfer.setData('text/plain', e.id);
+          ev.dataTransfer.effectAllowed = 'move';
+          div.style.opacity = '0.5';
+        });
+        div.addEventListener('dragend', () => {
+          div.style.opacity = '1';
+          draggedEventId = null;
+          dragSourceType = null;
+        });
+
+        // 点击schedule打开详情
+        div.addEventListener('click', () => {
+          showDetail(e.id);
+        });
+
+        overlay.appendChild(div);
+      });
+
+      timeline.style.position = 'relative';
+      timeline.appendChild(overlay);
+    }
+
+    // 整个timeline作为drop zone
+    timeline.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      // 高亮当前时间槽
+      const slot = e.target.closest('.hour-slot');
+      document.querySelectorAll('.hour-slot').forEach(s => s.style.background = '');
+      if (slot) slot.style.background = 'rgba(232,93,93,0.06)';
+    });
+
+    timeline.addEventListener('dragleave', (e) => {
+      if (!timeline.contains(e.relatedTarget)) {
+        document.querySelectorAll('.hour-slot').forEach(s => s.style.background = '');
+      }
+    });
+
+    timeline.addEventListener('drop', (e) => {
+      e.preventDefault();
+      document.querySelectorAll('.hour-slot').forEach(s => s.style.background = '');
+
+      if (!draggedEventId) return;
+
+      // 通过Y坐标计算时间（兼容overlay遮挡）
+      const timelineRect = timeline.getBoundingClientRect();
+      const y = e.clientY - timelineRect.top;
+      // 找到第一个hour-slot来确定偏移
+      const firstSlot = timeline.querySelector('.hour-slot');
+      if (!firstSlot) return;
+      const firstSlotRect = firstSlot.getBoundingClientRect();
+      const slotOffset = firstSlotRect.top - timelineRect.top;
+      const relY = y - slotOffset;
+      const hourFloat = relY / HOUR_HEIGHT;
+      const hour = Math.floor(hourFloat) + TIMELINE_START;
+      const clampedHour = Math.max(TIMELINE_START, Math.min(23, hour));
+      const startTime = `${String(clampedHour).padStart(2, '0')}:00`;
+      const endTime = EventStore.addHour(startTime, 1);
+
+      if (dragSourceType === 'todo') {
+        EventStore.convertToSchedule(draggedEventId, startTime, endTime);
+      } else if (dragSourceType === 'schedule') {
+        EventStore.moveSchedule(draggedEventId, startTime, endTime);
+      }
+
+      draggedEventId = null;
+      dragSourceType = null;
+      renderPage();
+    });
+  }
+
+  // 渲染待办列表（支持拖拽）
+  function renderTodoList() {
+    const todoSection = document.querySelector('.todo-section');
+    if (!todoSection) return;
+
+    const events = EventStore.getTodosByDate(viewDate);
+    const stars = events.filter(e => e.priority === 'star' && e.status !== 'done');
+    const normals = events.filter(e => e.priority !== 'star' && e.status !== 'done');
+    const dones = events.filter(e => e.status === 'done');
+
+    const countEl = document.querySelector('.todo-header .count');
+    if (countEl) countEl.textContent = events.length;
+
+    function renderCategory(categoryEl, items, tagClass) {
+      if (!categoryEl) return;
+      // 移除旧的卡片容器
+      const oldContainer = categoryEl.nextElementSibling;
+      if (oldContainer && oldContainer.classList.contains('todo-cards-container')) {
+        oldContainer.remove();
+      }
+
+      const container = document.createElement('div');
+      container.className = 'todo-cards-container';
+
+      if (items.length === 0) {
+        container.innerHTML = '<div style="padding:8px 12px;color:#D8CEC4;font-size:12px;">暂无</div>';
+      } else {
+        items.forEach(event => {
+          const isDone = event._instanceCompleted || event.status === 'done';
+          const card = document.createElement('div');
+          card.className = `todo-card${isDone ? ' done' : ''}`;
+          card.draggable = true;
+          card.dataset.eventId = event.id;
+          card.dataset.eventType = 'todo';
+          card.innerHTML = `
+            <div class="drag-handle">≡</div>
+            <span class="todo-tag ${tagClass}">${event.priority === 'star' ? '重点' : isDone ? '已完成' : '普通'}</span>
+            <span class="todo-card-title" style="${isDone ? 'text-decoration:line-through;color:#C8BCB0;' : ''}">${event.repeatRule && event.repeatRule !== 'none' ? '🔄 ' : ''}${event.title}</span>
+            <div class="todo-card-check" data-id="${event.id}" data-repeat="${event.repeatRule || 'none'}" data-viewdate="${viewDate}" style="cursor:pointer;width:44px;height:44px;border-radius:22px;border:2px solid ${isDone ? '#E85D5D' : '#DDD4C8'};display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${isDone ? '#E85D5D' : 'transparent'};">
+              ${isDone ? '<svg viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="3" stroke-linecap="round" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+            </div>
+          `;
+
+          // todo拖拽开始
+          card.addEventListener('dragstart', (ev) => {
+            draggedEventId = event.id;
+            dragSourceType = 'todo';
+            ev.dataTransfer.setData('text/plain', event.id);
+            ev.dataTransfer.effectAllowed = 'move';
+            card.style.opacity = '0.5';
+          });
+          card.addEventListener('dragend', () => {
+            card.style.opacity = '1';
+          });
+
+          // 点击卡片打开详情
+          card.addEventListener('click', (e) => {
+            // 不在拖拽手柄和完成按钮上触发
+            if (e.target.closest('.drag-handle') || e.target.closest('.todo-card-check')) return;
+            showDetail(event.id);
+          });
+
+          // 点击完成/取消完成（可切换）
+          const check = card.querySelector('.todo-card-check');
+          check.addEventListener('click', () => {
+            const repeatRule = check.dataset.repeat;
+            const viewDate = check.dataset.viewdate;
+            if (repeatRule && repeatRule !== 'none') {
+              // 重复任务：按日期记录完成
+              EventStore.toggleRepeatInstance(event.id, viewDate);
+            } else if (event.status === 'pending') {
+              EventStore.toggleStatus(event.id);
+            } else {
+              EventStore.undoComplete(event.id);
+            }
+            renderPage();
+          });
+
+          container.appendChild(card);
+        });
+      }
+
+      // 插入到category标签后面
+      categoryEl.after(container);
+    }
+
+    const categories = document.querySelectorAll('.todo-list .todo-category');
+    renderCategory(categories[0], stars, 'tag-star');
+    renderCategory(categories[1], normals, 'tag-normal');
+    renderCategory(categories[2], dones, 'tag-done');
+  }
+
+  // 拖出检测：schedule拖到todo区域 → 转为todo
+  function setupDragOutDetection() {
+    const todoSection = document.querySelector('.todo-section');
+    if (!todoSection) return;
+
+    todoSection.addEventListener('dragover', (e) => {
+      if (dragSourceType === 'schedule') {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        todoSection.style.outline = '2px dashed #E85D5D';
+        todoSection.style.outlineOffset = '-4px';
+      }
+    });
+
+    todoSection.addEventListener('dragleave', () => {
+      todoSection.style.outline = '';
+      todoSection.style.outlineOffset = '';
+    });
+
+    todoSection.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      todoSection.style.outline = '';
+      todoSection.style.outlineOffset = '';
+
+      if (dragSourceType === 'schedule' && draggedEventId) {
+        EventStore.convertToTodo(draggedEventId);
+        draggedEventId = null;
+        dragSourceType = null;
+        renderPage();
+      }
+    });
+  }
+
+  // 冲突UI样式注入
+  function injectConflictStyles() {
+    if (document.getElementById('conflict-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'conflict-styles';
+    style.textContent = `
+      .schedule-item.conflict {
+        border-left: 3px solid #E85D5D !important;
+        background: rgba(232,93,93,0.08) !important;
+      }
+      .conflict-badge {
+        font-size: 10px;
+        color: #E85D5D;
+        margin-left: 4px;
+        font-weight: 500;
+      }
+      .hour-slot[style*="background"] {
+        border-radius: 4px;
+        transition: background 0.2s;
+      }
+      /* 详情弹窗 */
+      .detail-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.3);
+        z-index: 200;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+      }
+      .detail-panel {
+        background: #FDFBF7;
+        border-radius: 16px 16px 0 0;
+        width: 100%;
+        max-width: 375px;
+        padding: 20px 24px 32px;
+        position: relative;
+        animation: slideUp 0.3s ease;
+      }
+      @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+      }
+      .detail-panel .detail-handle {
+        width: 36px;
+        height: 4px;
+        background: #DDD4C8;
+        border-radius: 2px;
+        margin: 0 auto 16px;
+      }
+      .detail-panel .detail-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #4A3F37;
+        margin-bottom: 12px;
+        border: none;
+        background: transparent;
+        width: 100%;
+        outline: none;
+        font-family: inherit;
+        padding: 4px 0;
+        border-bottom: 1px solid #EDE6DF;
+      }
+      .detail-panel .detail-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #F5F0EA;
+      }
+      .detail-panel .detail-label {
+        font-size: 13px;
+        color: #8B7E74;
+      }
+      .detail-panel .detail-value {
+        font-size: 13px;
+        color: #4A3F37;
+        font-weight: 500;
+      }
+      .detail-panel .detail-input {
+        font-size: 13px;
+        color: #4A3F37;
+        border: none;
+        background: transparent;
+        text-align: right;
+        outline: none;
+        font-family: inherit;
+        width: 120px;
+      }
+      .detail-panel .detail-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .detail-panel .btn-delete {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #EDE6DF;
+        background: transparent;
+        border-radius: 10px;
+        font-size: 14px;
+        color: #8B7E74;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .detail-panel .btn-save {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        background: #E85D5D;
+        border-radius: 10px;
+        font-size: 14px;
+        color: #FFF;
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: 500;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // ========== 详情弹窗 ==========
+  function showDetail(eventId) {
+    const event = EventStore.getById(eventId);
+    if (!event) return;
+
+    // 移除已有弹窗
+    const existing = document.querySelector('.detail-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'detail-overlay';
+
+    const typeLabel = event.type === 'schedule' ? '日程' : '待办';
+    const priorityLabel = event.priority === 'star' ? '重点' : '普通';
+
+    overlay.innerHTML = `
+      <div class="detail-panel">
+        <div class="detail-handle"></div>
+        <input class="detail-title" id="detailTitleInput" value="${event.title}">
+        <div class="detail-row">
+          <span class="detail-label">类型</span>
+          <span class="detail-value" id="detailTypeToggle" style="cursor:pointer;padding:2px 8px;border-radius:6px;background:${event.type === 'schedule' ? '#E3F2FD' : '#FFF3E0'};color:${event.type === 'schedule' ? '#1976D2' : '#E65100'};font-size:12px;">${typeLabel}（点击切换）</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">日期</span>
+          <input class="detail-input" type="date" id="detailDateInput" value="${event.date}">
+        </div>
+        ${event.repeatRule && event.repeatRule !== 'none' ? `
+        <div class="detail-row">
+          <span class="detail-label">重复</span>
+          <span class="detail-value" style="font-size:12px;color:#E85D5D;">🔄 ${event.repeatRule === 'daily' ? '每天' : '每周'}</span>
+        </div>
+        ` : ''}
+        ${event.type === 'schedule' ? `
+        <div class="detail-row">
+          <span class="detail-label">开始时间</span>
+          <input class="detail-input" type="time" id="detailStartInput" value="${event.startTime || ''}">
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">结束时间</span>
+          <input class="detail-input" type="time" id="detailEndInput" value="${event.endTime || ''}">
+        </div>
+        ` : ''}
+        <div class="detail-row">
+          <span class="detail-label">优先级</span>
+          <span class="detail-value" id="detailPriorityToggle" style="cursor:pointer;padding:2px 8px;border-radius:6px;background:${event.priority === 'star' ? '#FFF0E0' : '#F0F0F0'};color:${event.priority === 'star' ? '#E8A040' : '#A0A0A0'};font-size:12px;">${priorityLabel}（点击切换）</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">状态</span>
+          <span class="detail-value" id="detailStatusToggle" style="cursor:pointer;padding:2px 8px;border-radius:6px;background:${event.status === 'done' ? '#E8F5E9' : '#FFF'};color:${event.status === 'done' ? '#4CAF50' : '#8B7E74'};font-size:12px;">${event.status === 'done' ? '已完成' : '待完成'}（点击切换）</span>
+        </div>
+        ${event.type === 'schedule' ? `
+        <div class="detail-row" style="flex-direction:column;align-items:stretch;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="detail-label">子待办</span>
+            <span id="detailSubtaskCount" style="font-size:11px;color:#8B7E74;">${(event.subtasks||[]).length}项</span>
+          </div>
+          <div id="detailSubtaskList" style="max-height:120px;overflow-y:auto;"></div>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <input type="text" id="detailSubtaskInput" placeholder="添加子待办..." style="flex:1;border:1px solid #EDE6DF;border-radius:8px;padding:4px 8px;font-size:12px;outline:none;font-family:inherit;">
+            <button id="detailSubtaskAddBtn" style="background:#E85D5D;color:#FFF;border:none;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;">+</button>
+          </div>
+        </div>
+        ` : ''}
+        <div class="detail-actions">
+          <button class="btn-delete" id="detailDeleteBtn">删除</button>
+          <button class="btn-save" id="detailSaveBtn">保存</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // 点击遮罩关闭
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    // 子待办渲染（详情面板）
+    function renderDetailSubtasks() {
+      const listEl = document.getElementById('detailSubtaskList');
+      const countEl = document.getElementById('detailSubtaskCount');
+      if (!listEl) return;
+      const ev = EventStore.getById(eventId);
+      const subs = ev?.subtasks || [];
+      if (countEl) countEl.textContent = `${subs.length}项`;
+      listEl.innerHTML = '';
+      if (subs.length === 0) {
+        listEl.innerHTML = '<div style="font-size:11px;color:#D8CEC4;padding:4px 0;">暂无子待办</div>';
+        return;
+      }
+      subs.forEach(sub => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;border-radius:4px;';
+        item.innerHTML = `
+          <span style="width:16px;height:16px;border-radius:50%;border:2px solid ${sub.done ? '#E85D5D' : '#DDD4C8'};display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${sub.done ? '#E85D5D' : 'transparent'};font-size:9px;color:#FFF;" data-sid="${sub.id}">${sub.done ? '✓' : ''}</span>
+          <span style="flex:1;font-size:12px;color:${sub.done ? '#C0C0C0' : '#4A3F37'};${sub.done ? 'text-decoration:line-through;' : ''}">${sub.title}</span>
+        `;
+        // 整行可点击切换完成状态
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          EventStore.toggleSubtask(eventId, sub.id);
+          renderDetailSubtasks();
+        });
+        listEl.appendChild(item);
+      });
+    }
+    renderDetailSubtasks();
+
+    // 详情面板新增子待办
+    const detailSubInput = document.getElementById('detailSubtaskInput');
+    const detailSubAddBtn = document.getElementById('detailSubtaskAddBtn');
+    if (detailSubAddBtn && detailSubInput) {
+      detailSubAddBtn.addEventListener('click', () => {
+        const t = detailSubInput.value.trim();
+        if (!t) return;
+        EventStore.addSubtask(eventId, t);
+        detailSubInput.value = '';
+        renderDetailSubtasks();
+      });
+      detailSubInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') detailSubAddBtn.click();
+      });
+    }
+
+    // 暂存编辑状态
+    let editState = { type: event.type, priority: event.priority, status: event.status };
+
+    // 类型切换
+    document.getElementById('detailTypeToggle').addEventListener('click', () => {
+      editState.type = editState.type === 'schedule' ? 'todo' : 'schedule';
+      const el = document.getElementById('detailTypeToggle');
+      if (editState.type === 'schedule') {
+        el.textContent = '日程（点击切换）';
+        el.style.background = '#E3F2FD'; el.style.color = '#1976D2';
+      } else {
+        el.textContent = '待办（点击切换）';
+        el.style.background = '#FFF3E0'; el.style.color = '#E65100';
+      }
+      // 重新渲染面板以显示/隐藏时间字段
+      overlay.remove();
+      showDetail(eventId); // 简单方案：先保存再重新打开
+    });
+
+    // 优先级切换
+    document.getElementById('detailPriorityToggle').addEventListener('click', () => {
+      editState.priority = editState.priority === 'star' ? 'normal' : 'star';
+      const el = document.getElementById('detailPriorityToggle');
+      if (editState.priority === 'star') {
+        el.textContent = '重点（点击切换）';
+        el.style.background = '#FFF0E0'; el.style.color = '#E8A040';
+      } else {
+        el.textContent = '普通（点击切换）';
+        el.style.background = '#F0F0F0'; el.style.color = '#A0A0A0';
+      }
+    });
+
+    // 状态切换
+    document.getElementById('detailStatusToggle').addEventListener('click', () => {
+      editState.status = editState.status === 'done' ? 'pending' : 'done';
+      const el = document.getElementById('detailStatusToggle');
+      if (editState.status === 'done') {
+        el.textContent = '已完成（点击切换）';
+        el.style.background = '#E8F5E9'; el.style.color = '#4CAF50';
+      } else {
+        el.textContent = '待完成（点击切换）';
+        el.style.background = '#FFF'; el.style.color = '#8B7E74';
+      }
+    });
+
+    // 保存
+    document.getElementById('detailSaveBtn').addEventListener('click', () => {
+      const events = EventStore.getAll();
+      const ev = events.find(e => e.id === eventId);
+      if (!ev) return;
+      ev.title = document.getElementById('detailTitleInput').value.trim() || ev.title;
+      ev.date = document.getElementById('detailDateInput').value || ev.date;
+      ev.type = editState.type;
+      ev.priority = editState.priority;
+      ev.status = editState.status;
+      if (ev.type === 'schedule') {
+        const startInput = document.getElementById('detailStartInput');
+        const endInput = document.getElementById('detailEndInput');
+        ev.startTime = startInput ? startInput.value || null : null;
+        ev.endTime = endInput ? endInput.value || null : null;
+      } else {
+        ev.startTime = null;
+        ev.endTime = null;
+      }
+      // 重新检测冲突
+      if (ev.type === 'schedule' && ev.startTime) {
+        EventStore.runConflictDetection(events, ev.date);
+      }
+      localStorage.setItem('xiaohonghua_events', JSON.stringify(events));
+      overlay.remove();
+      renderPage();
+    });
+
+    // 删除
+    document.getElementById('detailDeleteBtn').addEventListener('click', () => {
+      EventStore.deleteEvent(eventId);
+      overlay.remove();
+      renderPage();
+    });
+  }
+
+  function updateFlowerBar() {
+    const stats = EventStore.getDayStats(viewDate);
+    const countEl = document.querySelector('.flower-count-bar .count');
+    if (countEl) countEl.textContent = stats.done;
+  }
+
+  function renderPage() {
+    updateDateInfo();
+    renderTimeline();
+    renderTodoList();
+    updateFlowerBar();
+  }
+
+  // 返回周历按钮
+  const backBtn = document.getElementById('backToHome') || document.querySelector('.back-btn');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      window.location.href = 'xiaohonghua_v8a.html';
+    });
+  }
+
+  // FAB 跳转创建
+  const fab = document.querySelector('.fab-container') || document.querySelector('.fab-top');
+  if (fab) {
+    fab.style.cursor = 'pointer';
+    fab.addEventListener('click', () => {
+      window.location.href = `xiaohonghua_create.html?date=${viewDate}`;
+    });
+  }
+
+  injectConflictStyles();
+  setupDragOutDetection();
+
+  // ========== 触摸拖拽 Polyfill ==========
+  (function() {
+    // 为所有 draggable 元素添加触摸拖拽支持
+    function addTouchDragSupport() {
+      const draggables = document.querySelectorAll('[draggable="true"]');
+      draggables.forEach(el => {
+        if (el._touchDragBound) return;
+        el._touchDragBound = true;
+        let ghost = null;
+        let startX, startY;
+        let isDragging = false;
+
+        el.addEventListener('touchstart', (e) => {
+          const touch = e.touches[0];
+          startX = touch.clientX;
+          startY = touch.clientY;
+          isDragging = false;
+
+          // 长按200ms后开始拖拽
+          el._longPressTimer = setTimeout(() => {
+            isDragging = true;
+            el.style.opacity = '0.5';
+
+            // 创建ghost元素
+            ghost = el.cloneNode(true);
+            ghost.style.position = 'fixed';
+            ghost.style.zIndex = '1000';
+            ghost.style.width = el.offsetWidth + 'px';
+            ghost.style.opacity = '0.8';
+            ghost.style.pointerEvents = 'none';
+            ghost.style.left = (touch.clientX - el.offsetWidth/2) + 'px';
+            ghost.style.top = (touch.clientY - 20) + 'px';
+            document.body.appendChild(ghost);
+          }, 200);
+        }, {passive: true});
+
+        el.addEventListener('touchmove', (e) => {
+          if (!isDragging) {
+            const touch = e.touches[0];
+            const dx = Math.abs(touch.clientX - startX);
+            const dy = Math.abs(touch.clientY - startY);
+            if (dx > 10 || dy > 10) {
+              clearTimeout(el._longPressTimer);
+            }
+            return;
+          }
+          e.preventDefault();
+          const touch = e.touches[0];
+          if (ghost) {
+            ghost.style.left = (touch.clientX - el.offsetWidth/2) + 'px';
+            ghost.style.top = (touch.clientY - 20) + 'px';
+          }
+
+          // 高亮drop target
+          const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+          document.querySelectorAll('.hour-slot, .todo-section').forEach(s => s.style.background = '');
+          const dropTarget = elemBelow?.closest('.hour-slot') || elemBelow?.closest('.todo-section');
+          if (dropTarget) {
+            dropTarget.style.background = 'rgba(232,93,93,0.06)';
+          }
+        }, {passive: false});
+
+        el.addEventListener('touchend', (e) => {
+          clearTimeout(el._longPressTimer);
+          if (!isDragging) return;
+          isDragging = false;
+          el.style.opacity = '';
+
+          if (ghost) {
+            ghost.remove();
+            ghost = null;
+          }
+
+          const touch = e.changedTouches[0];
+          const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+          const dropTarget = elemBelow?.closest('.hour-slot') || elemBelow?.closest('.todo-section');
+
+          if (dropTarget) {
+            const eventId = el.dataset.eventId;
+            const eventType = el.dataset.eventType;
+
+            if (dropTarget.classList.contains('hour-slot') && eventType === 'todo') {
+              // todo拖到时间轴 → 转为schedule
+              const hour = dropTarget.dataset.hour;
+              EventStore.convertToSchedule(eventId, hour + ':00', hour + ':00');
+              renderPage();
+            } else if (dropTarget.classList.contains('hour-slot') && eventType === 'schedule') {
+              // schedule在时间轴内拖拽 → 调整时间
+              const hour = dropTarget.dataset.hour;
+              EventStore.moveSchedule(eventId, hour + ':00', addHour(hour + ':00', 1));
+              renderPage();
+            } else if (dropTarget.classList.contains('todo-section') && eventType === 'schedule') {
+              // schedule拖到todo区 → 转为todo
+              EventStore.convertToTodo(eventId);
+              renderPage();
+            }
+          }
+
+          // 清除高亮
+          document.querySelectorAll('.hour-slot, .todo-section').forEach(s => s.style.background = '');
+        });
+      });
+    }
+
+    // 在renderPage结束后调用
+    const observer = new MutationObserver(() => {
+      setTimeout(addTouchDragSupport, 50);
+    });
+    observer.observe(document.querySelector('.main-content') || document.body, { childList: true, subtree: true });
+    setTimeout(addTouchDragSupport, 100);
+  })();
+
+  renderPage();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1043,7 +1043,7 @@
   });
 </script>
 
-<script src="store.js"></script>
+<script src="store.js?v=3"></script>
 <script>
   // ========== 保存事件逻辑 ==========
 
@@ -1106,9 +1106,15 @@
     // 保存成功提示
     showToast('🌸 已种下一朵小红花！');
 
-    // 延迟跳转到首页
+    // 延迟跳转回日视图（如果有date参数）或首页
     setTimeout(() => {
-      window.location.href = 'xiaohonghua_v8a.html';
+      const params = new URLSearchParams(window.location.search);
+      const date = params.get('date');
+      if (date) {
+        window.location.href = `xiaohonghua_detail.html?date=${date}`;
+      } else {
+        window.location.href = 'xiaohonghua_v8a.html';
+      }
     }, 800);
   }
 
@@ -1342,9 +1348,15 @@
   // 绑定悬浮完成按钮
   document.querySelector('.fab-done').addEventListener('click', saveEvent);
 
-  // 返回按钮
+  // 返回按钮 - 跳回来源页
   document.querySelector('.back-btn').addEventListener('click', () => {
-    window.location.href = 'xiaohonghua_v8a.html';
+    const params = new URLSearchParams(window.location.search);
+    const date = params.get('date');
+    if (date) {
+      window.location.href = `xiaohonghua_detail.html?date=${date}`;
+    } else {
+      window.location.href = 'xiaohonghua_v8a.html';
+    }
   });
 
   // 设置默认日期（支持URL参数）

@@ -505,99 +505,99 @@
       </div>
 
       <!-- Hour slots -->
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="00">
         <span class="hour-label">00</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="01">
         <span class="hour-label">01</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="02">
         <span class="hour-label">02</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="03">
         <span class="hour-label">03</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="04">
         <span class="hour-label">04</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="05">
         <span class="hour-label">05</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="06">
         <span class="hour-label">06</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="07">
         <span class="hour-label">07</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="08">
         <span class="hour-label">08</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot current">
+      <div class="hour-slot current" data-hour="09">
         <span class="hour-label">09</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="10">
         <span class="hour-label">10</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="11">
         <span class="hour-label">11</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="12">
         <span class="hour-label">12</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="13">
         <span class="hour-label">13</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="14">
         <span class="hour-label">14</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="15">
         <span class="hour-label">15</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="16">
         <span class="hour-label">16</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="17">
         <span class="hour-label">17</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="18">
         <span class="hour-label">18</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="19">
         <span class="hour-label">19</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="20">
         <span class="hour-label">20</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="21">
         <span class="hour-label">21</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="22">
         <span class="hour-label">22</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
-      <div class="hour-slot">
+      <div class="hour-slot" data-hour="23">
         <span class="hour-label">23</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
@@ -640,7 +640,7 @@
 
 </div>
 
-<script src="store.js"></script>
+<script src="store.js?v=3"></script>
 <script>
   // ========== 日视图 + 日程引擎 ==========
 
@@ -1299,6 +1299,8 @@
           // 长按200ms后开始拖拽
           el._longPressTimer = setTimeout(() => {
             isDragging = true;
+            // 阻止后续touchmove的默认滚动
+            try { e.preventDefault(); } catch(ex) {}
             el.style.opacity = '0.5';
 
             // 创建ghost元素
@@ -1308,11 +1310,13 @@
             ghost.style.width = el.offsetWidth + 'px';
             ghost.style.opacity = '0.8';
             ghost.style.pointerEvents = 'none';
+            ghost.style.transform = 'scale(1.05)';
+            ghost.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
             ghost.style.left = (touch.clientX - el.offsetWidth/2) + 'px';
-            ghost.style.top = (touch.clientY - 20) + 'px';
+            ghost.style.top = (touch.clientY - 30) + 'px';
             document.body.appendChild(ghost);
           }, 200);
-        }, {passive: true});
+        }, {passive: false});
 
         el.addEventListener('touchmove', (e) => {
           if (!isDragging) {
@@ -1328,7 +1332,7 @@
           const touch = e.touches[0];
           if (ghost) {
             ghost.style.left = (touch.clientX - el.offsetWidth/2) + 'px';
-            ghost.style.top = (touch.clientY - 20) + 'px';
+            ghost.style.top = (touch.clientY - 30) + 'px';
           }
 
           // 高亮drop target

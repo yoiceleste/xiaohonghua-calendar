@@ -7,6 +7,7 @@ const CACHE_NAME = 'xiaohonghua-v1';
 
 // 需要缓存的静态资源
 const STATIC_ASSETS = [
+  '/',
   '/xiaohonghua_v8a.html',
   '/xiaohonghua_detail.html',
   '/xiaohonghua_create.html',

@@ -2,7 +2,7 @@
   "name": "小红花日历",
   "short_name": "小红花",
   "description": "温馨可爱的 Schedule + Todo App",
-  "start_url": "/xiaohonghua_v8a.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#FFFDF8",

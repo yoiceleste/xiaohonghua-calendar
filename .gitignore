@@ -1,0 +1,24 @@
+# 不需要上传的文件
+.uploads/
+*.py
+*.png
+*.jpg
+
+# 旧版本HTML（只保留v8a系列）
+xiaohonghua_v3.html
+xiaohonghua_v4.html
+xiaohonghua_v5.html
+xiaohonghua_v6.html
+xiaohonghua_v7a.html
+xiaohonghua_v7b.html
+xiaohonghua_v8.html
+xiaohonghua_v8e.html
+xiaohonghua_calendar_ui.html
+xiaohonghua_calendar_v2.jpg
+xiaohonghua_calendar_v3.html
+xiaohonghua_calendar_v4.html
+xiaohonghua_calendar_v5.html
+xiaohonghua_calendar_v6.html
+xiaohonghua_calendar_v8.html
+xiaohonghua_calendar_final.html
+xiaohonghua_calendar_ui.jpg

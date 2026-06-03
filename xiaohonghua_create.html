@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="小红花">
+<meta name="theme-color" content="#E95D5D">
+<link rel="manifest" href="/manifest.json">
+<title>种下一朵小红花 - 小红花日历</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  .phone-frame {
+    width: 375px;
+    max-width: 100vw;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-height: 812px;
+    background: #FFFBF0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .dynamic-island {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 36px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 100;
+  }
+
+  .status-bar {
+    height: 54px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #8B7E74;
+  }
+  .status-bar .time { font-size: 15px; font-weight: 600; }
+  .status-bar .icons { display: flex; gap: 5px; align-items: center; }
+  .status-bar .icons svg { width: 16px; height: 16px; }
+
+  /* Header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 20px 0;
+  }
+  .back-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(200,180,160,0.15); }
+  .back-btn svg { width: 20px; height: 20px; color: #8B7E74; }
+  .save-btn {
+    font-size: 14px;
+    font-weight: 600;
+    color: #E85D5D;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 20px;
+    transition: background 0.2s;
+    font-family: inherit;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .save-btn:hover { background: rgba(232,93,93,0.08); }
+
+  /* Page Title - 仪式感 */
+  .page-title-section {
+    text-align: center;
+    padding: 8px 20px 12px;
+    position: relative;
+  }
+  .page-title-section .flower-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+    margin-right: 4px;
+    transform: rotate(-8deg);
+  }
+  .page-title-section h1 {
+    font-size: 18px;
+    font-weight: 500;
+    color: #6B5E54;
+    letter-spacing: 1px;
+    display: inline;
+    vertical-align: middle;
+  }
+  .page-title-section .subtitle {
+    font-size: 12px;
+    color: #C0B4A8;
+    margin-top: 4px;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+  }
+
+  /* Type Switcher - 手帐标签风格 */
+  .type-switcher {
+    display: flex;
+    padding: 0 24px 10px;
+    gap: 0;
+    justify-content: center;
+  }
+  .type-tab {
+    padding: 6px 20px;
+    font-size: 13px;
+    font-weight: 400;
+    color: #B0A498;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 1.5px solid transparent;
+    font-family: inherit;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .type-tab.active {
+    color: #6B5E54;
+    border-bottom-color: #E85D5D;
+    font-weight: 500;
+  }
+
+  /* Notebook area */
+  .notebook {
+    padding: 0 24px;
+    overflow-y: auto;
+    height: calc(100vh - 230px);
+    max-height: calc(812px - 230px);
+  }
+  .notebook::-webkit-scrollbar { display: none; }
+
+  /* Left margin line like notebook */
+  .notebook::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 68px;
+    bottom: 0;
+    width: 1px;
+    background: rgba(232,93,93,0.08);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .notebook > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Notebook line item */
+  .notebook-row {
+    display: flex;
+    align-items: flex-start;
+    padding: 0;
+    position: relative;
+  }
+  .notebook-label {
+    width: 56px;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: #B0A498;
+    font-weight: 400;
+    padding-top: 0;
+    text-align: right;
+    padding-right: 12px;
+    letter-spacing: 0.5px;
+    line-height: 28px;
+  }
+  .notebook-field {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+  }
+
+  /* Title field - 核心区域 */
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    overflow: visible;
+  }
+  .title-field input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    font-size: 22px;
+    font-weight: 500;
+    color: #4A3F37;
+    outline: none;
+    padding: 0;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+  }
+  .title-field input::placeholder {
+    color: #D8CEC4;
+    font-size: 20px;
+    font-weight: 300;
+  }
+  .title-line {
+    height: 1.5px;
+    background: linear-gradient(to right, #F0E4DA, transparent);
+    margin-top: 2px;
+  }
+
+  /* AI trigger inline (next to title) */
+  .ai-trigger-inline {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(220,200,180,0.25);
+    background: rgba(200,180,160,0.06);
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    font-family: inherit;
+    min-height: 44px;
+  }
+  .ai-trigger-inline:hover {
+    background: rgba(200,180,160,0.12);
+    border-color: rgba(200,180,160,0.5);
+  }
+  .ai-trigger-inline .ai-icon {
+    font-size: 12px;
+  }
+  .ai-trigger-inline .ai-text {
+    font-size: 11px;
+    color: #B0A498;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  /* Regular notebook field */
+  .field-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 400;
+    color: #4A3F37;
+    outline: none;
+    padding: 8px 0;
+    font-family: inherit;
+  }
+  .field-input::placeholder {
+    color: #D8CEC4;
+    font-weight: 300;
+  }
+  .field-line {
+    height: 1px;
+    background: #F0EAE4;
+    margin-top: 2px;
+  }
+
+  /* Date field */
+  .date-field input[type="date"] {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 400;
+    color: #4A3F37;
+    outline: none;
+    padding: 8px 0;
+    font-family: inherit;
+  }
+  .date-field input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.4;
+    cursor: pointer;
+  }
+
+  /* Time range */
+  .time-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    height: 28px;
+  }
+  .time-range input {
+    width: 90px;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    color: #4A3F37;
+    outline: none;
+    font-family: inherit;
+    text-align: left;
+    padding: 0;
+  }
+  .time-range input::-webkit-calendar-picker-indicator {
+    opacity: 0.4;
+  }
+  .time-range .dash {
+    color: #C8BCB0;
+    font-size: 14px;
+  }
+
+  /* Duration - 胶囊标签风格 */
+  .duration-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0 4px;
+  }
+  .duration-tag {
+    padding: 5px 14px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 400;
+    color: #B0A498;
+    background: rgba(200,180,160,0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    font-family: inherit;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .duration-tag.active {
+    color: #E85D5D;
+    background: rgba(232,93,93,0.06);
+    border-color: rgba(232,93,93,0.2);
+  }
+  .custom-duration {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+  }
+  .custom-duration.show { display: flex; }
+  .custom-duration input {
+    width: 60px;
+    border: none;
+    border-bottom: 1px solid #F0E4DA;
+    background: transparent;
+    font-size: 15px;
+    color: #4A3F37;
+    text-align: center;
+    outline: none;
+    padding: 4px 0;
+    font-family: inherit;
+  }
+  .custom-duration span {
+    font-size: 12px;
+    color: #B0A498;
+  }
+
+  /* Priority - 手帐贴纸风格 */
+  .priority-row {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+  }
+  .priority-tag {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    color: #A09488;
+    background: rgba(200,180,160,0.08);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    min-height: 44px;
+  }
+  .priority-tag.active-star {
+    color: #D4943A;
+    background: rgba(212,148,58,0.08);
+    border-color: rgba(212,148,58,0.25);
+  }
+  .priority-tag.active-normal {
+    color: #8B7E74;
+    background: rgba(139,126,116,0.06);
+    border-color: rgba(139,126,116,0.2);
+  }
+  .priority-tag .star { font-size: 14px; }
+  .repeat-tag {
+    display: flex;
+    align-items: center;
+    padding: 5px 14px;
+    border-radius: 16px;
+    font-size: 12px;
+    color: #A09488;
+    background: rgba(200,180,160,0.08);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    min-height: 44px;
+  }
+  .repeat-tag.active-repeat {
+    color: #E85D5D;
+    background: rgba(232,93,93,0.06);
+    border-color: rgba(232,93,93,0.2);
+  }
+  .priority-tag .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #C0B4A8;
+  }
+
+  /* Notes - 横线纸风格 */
+  .notes-area {
+    position: relative;
+    padding: 8px 0 0;
+  }
+  .notes-area textarea {
+    width: 100%;
+    min-height: 120px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 400;
+    color: #4A3F37;
+    outline: none;
+    resize: none;
+    font-family: inherit;
+    line-height: 28px;
+    letter-spacing: 0.3px;
+  }
+  .notes-area textarea::placeholder {
+    color: #D8CEC4;
+    font-weight: 300;
+  }
+  .notes-lines {
+    position: absolute;
+    top: 36px;
+    left: 0;
+    right: 0;
+    height: 112px;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 27px,
+      #F0EAE4 27px,
+      #F0EAE4 28px
+    );
+  }
+
+  /* Schedule only fields */
+  .schedule-only { display: none; }
+  .schedule-only.show { display: flex; }
+
+  /* AI Quick Create - 折叠式 */
+  .ai-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease, margin 0.35s ease;
+    padding: 0;
+    margin: 0 0 0 56px;
+    position: relative;
+    z-index: 5;
+  }
+  .ai-panel.open {
+    max-height: 130px;
+    padding: 4px 0 2px 0;
+    margin: 0 0 2px 56px;
+  }
+  .ai-box {
+    background: rgba(253,251,247,0.95);
+    border-radius: 10px;
+    padding: 8px 10px;
+    position: relative;
+    border: 1px solid rgba(220,200,180,0.25);
+  }
+  .ai-input-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .ai-input-row textarea {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    color: #4A3F37;
+    outline: none;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.4;
+    min-width: 0;
+  }
+  .ai-input-row textarea::placeholder {
+    color: #C8BCB0;
+    font-weight: 300;
+    font-size: 12px;
+  }
+  .mic-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(220,200,180,0.25);
+    background: rgba(200,180,160,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    margin-top: 2px;
+  }
+  .mic-btn:hover {
+    background: rgba(232,93,93,0.08);
+    border-color: rgba(232,93,93,0.3);
+  }
+  .mic-btn svg {
+    width: 18px;
+    height: 18px;
+    color: #B0A498;
+  }
+  .mic-btn:hover svg {
+    color: #E85D5D;
+  }
+  .ai-hint {
+    font-size: 11px;
+    color: #C8BCB0;
+    margin-top: 6px;
+  }
+  .ai-flower {
+    position: absolute;
+    top: -8px;
+    right: 10px;
+    width: 22px;
+    height: 22px;
+    transform: rotate(12deg);
+    opacity: 0.6;
+  }
+
+  /* Spacing between rows */
+  .row-spacer {
+    height: 16px;
+  }
+
+  /* Bottom decoration */
+  .bottom-deco {
+    position: absolute;
+    bottom: 12px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.35;
+  }
+  .bottom-deco img {
+    width: 18px;
+    height: 18px;
+  }
+  .bottom-deco span {
+    font-size: 10px;
+    color: #B0A498;
+    letter-spacing: 1px;
+  }
+
+  /* Subtle paper texture overlay */
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+      radial-gradient(ellipse at 15% 30%, rgba(245,230,200,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 70%, rgba(240,225,195,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 10%, rgba(245,235,210,0.04) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .phone-frame > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Floating done button */
+  .fab-done {
+    position: absolute;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    right: 24px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #E85D5D;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(232,93,93,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+    z-index: 50;
+    border: none;
+  }
+  .fab-done:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 18px rgba(232,93,93,0.4);
+  }
+  .fab-done:active {
+    transform: scale(0.95);
+  }
+  .fab-done svg {
+    width: 24px;
+    height: 24px;
+    color: #FFF;
+  }
+
+  @media (max-height: 500px) {
+    .fab-done {
+      bottom: 8px !important;
+      right: 8px !important;
+    }
+    .bottom-deco {
+      display: none;
+    }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="dynamic-island"></div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <svg viewBox="0 0 24 24" fill="#8B7E74"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+      <svg viewBox="0 0 24 24" fill="#8B7E74"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="back-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </div>
+    <button class="save-btn">种下这朵花</button>
+  </div>
+
+  <!-- Page Title -->
+  <div class="page-title-section">
+    <div>
+      <img class="flower-icon" src="flower_todo.png" alt="">
+      <h1>记录一个想法</h1>
+    </div>
+  </div>
+
+  <!-- Type Switcher -->
+  <div class="type-switcher">
+    <button class="type-tab active" data-type="todo">待办</button>
+    <button class="type-tab" data-type="schedule">日程</button>
+  </div>
+
+  <!-- Notebook Content -->
+  <div class="notebook">
+
+    <!-- Title - 核心区域 + AI trigger -->
+    <div class="notebook-row">
+      <div class="notebook-label">标题</div>
+      <div class="notebook-field title-field">
+        <div class="title-row">
+          <input type="text" id="titleInput" placeholder="想做什么呢..." autofocus>
+          <button class="ai-trigger-inline" id="aiTrigger">
+            <span class="ai-icon">✨</span>
+            <span class="ai-text">AI 快速创建</span>
+          </button>
+        </div>
+        <div class="title-line"></div>
+      </div>
+    </div>
+
+    <!-- AI Panel (expanded below title) -->
+    <div class="ai-panel" id="aiPanel">
+      <div class="ai-box">
+        <img class="ai-flower" src="flower_todo.png" alt="">
+        <div class="ai-input-row">
+          <textarea rows="2" placeholder="试试说：明天下午3点开会，预计1小时"></textarea>
+          <button class="mic-btn" title="语音输入">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <rect x="9" y="2" width="6" height="11" rx="3"/>
+              <path d="M5 10a7 7 0 0014 0"/>
+              <line x1="12" y1="17" x2="12" y2="22"/>
+            </svg>
+          </button>
+        </div>
+        <div class="ai-hint">用自然语言描述，AI会帮你填写</div>
+      </div>
+    </div>
+
+    <div class="row-spacer"></div>
+
+    <!-- Date -->
+    <div class="notebook-row">
+      <div class="notebook-label">日期</div>
+      <div class="notebook-field date-field">
+        <input type="date" value="2026-06-02">
+        <div class="field-line"></div>
+      </div>
+    </div>
+
+    <!-- Schedule Only: Time Range -->
+    <div class="notebook-row schedule-only">
+      <div class="notebook-label">时间</div>
+      <div class="notebook-field">
+        <div class="time-range">
+          <input type="time" value="09:00">
+          <span class="dash">—</span>
+          <input type="time" value="10:00">
+        </div>
+        <div class="field-line"></div>
+      </div>
+    </div>
+
+    <div class="row-spacer"></div>
+
+    <!-- Duration -->
+    <div class="notebook-row">
+      <div class="notebook-label">时长</div>
+      <div class="notebook-field">
+        <div class="duration-row">
+          <button class="duration-tag">15分钟</button>
+          <button class="duration-tag active">30分钟</button>
+          <button class="duration-tag">1小时</button>
+          <button class="duration-tag">2小时</button>
+          <button class="duration-tag" data-custom>自定义</button>
+        </div>
+        <div class="custom-duration">
+          <input type="number" placeholder="30" min="1">
+          <span>分钟</span>
+        </div>
+        <div class="field-line"></div>
+      </div>
+    </div>
+
+    <div class="row-spacer"></div>
+
+    <!-- Priority -->
+    <div class="notebook-row">
+      <div class="notebook-label">优先级</div>
+      <div class="notebook-field">
+        <div class="priority-row">
+          <div class="priority-tag active-star">
+            <span class="star">⭐</span> 重点
+          </div>
+          <div class="priority-tag">
+            <span class="dot"></span> 普通
+          </div>
+        </div>
+        <!-- 重复 -->
+        <div class="repeat-row" style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+          <span style="font-size:12px;color:#B0A498;flex-shrink:0;">重复</span>
+          <div class="repeat-tag active-repeat" data-repeat="none">不重复</div>
+          <div class="repeat-tag" data-repeat="daily">每天</div>
+          <div class="repeat-tag" data-repeat="weekly">每周</div>
+        </div>
+        <div class="field-line"></div>
+      </div>
+    </div>
+
+    <div class="row-spacer"></div>
+
+    <!-- Notes / 子待办 -->
+    <div class="notebook-row" id="notesRow">
+      <div class="notebook-label" id="notesLabel">备注</div>
+      <div class="notebook-field">
+        <!-- Todo模式：备注 -->
+        <div class="notes-area" id="notesArea">
+          <textarea placeholder="写点什么..."></textarea>
+          <div class="notes-lines"></div>
+        </div>
+        <!-- Schedule模式：子待办 -->
+        <div class="subtask-area" id="subtaskArea" style="display:none;">
+          <div class="subtask-list" id="subtaskList"></div>
+          <div class="subtask-add">
+            <input type="text" id="subtaskInput" placeholder="添加子待办..." style="flex:1;border:none;background:transparent;font-size:13px;color:#4A3F37;outline:none;font-family:inherit;padding:6px 0;">
+            <button id="subtaskAddBtn" style="background:#E85D5D;color:#FFF;border:none;border-radius:8px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;">+ 添加</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom space -->
+    <div style="height: 50px;"></div>
+  </div>
+
+  <!-- Floating Done Button -->
+  <button class="fab-done">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  </button>
+
+  <!-- Bottom decoration -->
+  <div class="bottom-deco">
+    <img src="flower_todo.png" alt="">
+    <span>小红花日历</span>
+    <img src="flower_todo.png" alt="">
+  </div>
+
+</div>
+
+<script>
+  // AI panel toggle
+  const aiTrigger = document.getElementById('aiTrigger');
+  const aiPanel = document.getElementById('aiPanel');
+  const aiTextarea = aiPanel.querySelector('textarea');
+  aiTrigger.addEventListener('click', () => {
+    const isOpen = aiPanel.classList.toggle('open');
+    const text = aiTrigger.querySelector('.ai-text');
+    if (isOpen) {
+      text.textContent = '收起';
+      setTimeout(() => aiTextarea.focus(), 350);
+    } else {
+      text.textContent = 'AI 快速创建';
+    }
+  });
+
+  // Type switcher
+  const typeTabs = document.querySelectorAll('.type-tab');
+  const scheduleOnly = document.querySelectorAll('.schedule-only');
+
+  typeTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      typeTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      scheduleOnly.forEach(el => {
+        if (tab.dataset.type === 'schedule') {
+          el.classList.add('show');
+        } else {
+          el.classList.remove('show');
+        }
+      });
+
+      // 切换备注/子待办
+      const notesArea = document.getElementById('notesArea');
+      const subtaskArea = document.getElementById('subtaskArea');
+      const notesLabel = document.getElementById('notesLabel');
+      if (tab.dataset.type === 'schedule') {
+        if (notesArea) notesArea.style.display = 'none';
+        if (subtaskArea) subtaskArea.style.display = 'block';
+        if (notesLabel) notesLabel.textContent = '子待办';
+      } else {
+        if (notesArea) notesArea.style.display = '';
+        if (subtaskArea) subtaskArea.style.display = 'none';
+        if (notesLabel) notesLabel.textContent = '备注';
+      }
+    });
+  });
+
+  // 子待办管理（创建页）
+  const subtaskInput = document.getElementById('subtaskInput');
+  const subtaskAddBtn = document.getElementById('subtaskAddBtn');
+  const subtaskList = document.getElementById('subtaskList');
+  let tempSubtasks = [];
+
+  function renderSubtasks() {
+    if (!subtaskList) return;
+    subtaskList.innerHTML = '';
+    tempSubtasks.forEach((sub, i) => {
+      const item = document.createElement('div');
+      item.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dashed #EDE6DF;cursor:pointer;border-radius:4px;';
+      item.innerHTML = `
+        <span style="width:16px;height:16px;border-radius:50%;border:2px solid ${sub.done ? '#E85D5D' : '#DDD4C8'};display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${sub.done ? '#E85D5D' : 'transparent'};font-size:10px;color:#FFF;" data-idx="${i}">${sub.done ? '✓' : ''}</span>
+        <span style="flex:1;font-size:13px;color:${sub.done ? '#C0C0C0' : '#4A3F37'};${sub.done ? 'text-decoration:line-through;' : ''}">${sub.title}</span>
+        <span style="cursor:pointer;color:#CCC;font-size:14px;padding:0 4px;" data-delidx="${i}">×</span>
+      `;
+      // 整行点击完成/取消（排除删除按钮）
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('[data-delidx]')) return;
+        tempSubtasks[i].done = !tempSubtasks[i].done;
+        renderSubtasks();
+      });
+      // 删除
+      item.querySelector(`[data-delidx="${i}"]`).addEventListener('click', () => {
+        tempSubtasks.splice(i, 1);
+        renderSubtasks();
+      });
+      subtaskList.appendChild(item);
+    });
+  }
+
+  if (subtaskAddBtn && subtaskInput) {
+    subtaskAddBtn.addEventListener('click', () => {
+      const title = subtaskInput.value.trim();
+      if (!title) return;
+      tempSubtasks.push({ id: Date.now().toString(36), title, done: false });
+      subtaskInput.value = '';
+      renderSubtasks();
+    });
+    subtaskInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') subtaskAddBtn.click();
+    });
+  }
+
+  // Duration tags
+  const durationTags = document.querySelectorAll('.duration-tag');
+  const customDuration = document.querySelector('.custom-duration');
+
+  durationTags.forEach(tag => {
+    tag.addEventListener('click', () => {
+      durationTags.forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+
+      if (tag.dataset.custom !== undefined) {
+        customDuration.classList.add('show');
+      } else {
+        customDuration.classList.remove('show');
+        // 根据选择的时长更新结束时间
+        const startInput = document.querySelectorAll('.time-range input')[0];
+        const endInput = document.querySelectorAll('.time-range input')[1];
+        if (startInput && endInput && startInput.value) {
+          const durationText = tag.textContent;
+          let minutes = 0;
+          if (durationText.includes('分钟')) minutes = parseInt(durationText);
+          else if (durationText.includes('小时')) minutes = parseInt(durationText) * 60;
+          if (minutes > 0) {
+            const [h, m] = startInput.value.split(':').map(Number);
+            const totalMin = h * 60 + m + minutes;
+            const newH = Math.floor(totalMin / 60) % 24;
+            const newM = totalMin % 60;
+            endInput.value = `${String(newH).padStart(2,'0')}:${String(newM).padStart(2,'0')}`;
+          }
+        }
+      }
+    });
+  });
+
+  // 时间变化时自动匹配时长标签
+  const timeInputs = document.querySelectorAll('.time-range input');
+  function autoMatchDuration() {
+    const start = timeInputs[0]?.value;
+    const end = timeInputs[1]?.value;
+    if (!start || !end) return;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+    if (diffMin <= 0) return;
+
+    durationTags.forEach(t => t.classList.remove('active'));
+    customDuration.classList.remove('show');
+
+    // 匹配预设时长
+    const presetMap = {'15分钟': 15, '30分钟': 30, '1小时': 60, '2小时': 120};
+    let matched = false;
+    for (const [text, mins] of Object.entries(presetMap)) {
+      if (diffMin === mins) {
+        durationTags.forEach(t => {
+          if (t.textContent.trim() === text) t.classList.add('active');
+        });
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      // 自定义
+      const customTag = document.querySelector('.duration-tag[data-custom]');
+      if (customTag) {
+        customTag.classList.add('active');
+        customDuration.classList.add('show');
+        const customInput = customDuration.querySelector('input');
+        if (customInput) customInput.value = diffMin;
+      }
+    }
+  }
+  timeInputs.forEach(input => {
+    input.addEventListener('change', autoMatchDuration);
+  });
+
+  // Priority tags
+  const priorityTags = document.querySelectorAll('.priority-tag');
+
+  priorityTags.forEach(tag => {
+    tag.addEventListener('click', () => {
+      priorityTags.forEach(t => {
+        t.classList.remove('active-star', 'active-normal');
+      });
+      if (tag.textContent.includes('重点')) {
+        tag.classList.add('active-star');
+      } else {
+        tag.classList.add('active-normal');
+      }
+    });
+  });
+
+  // 重复选项
+  const repeatTags = document.querySelectorAll('.repeat-tag');
+  repeatTags.forEach(tag => {
+    tag.addEventListener('click', () => {
+      repeatTags.forEach(t => t.classList.remove('active-repeat'));
+      tag.classList.add('active-repeat');
+    });
+  });
+</script>
+
+<script src="store.js"></script>
+<script>
+  // ========== 保存事件逻辑 ==========
+
+  // 获取当前选中的类型
+  function getSelectedType() {
+    const active = document.querySelector('.type-tab.active');
+    return active ? active.dataset.type : 'todo';
+  }
+
+  // 获取当前选中的时长
+  function getSelectedDuration() {
+    const active = document.querySelector('.duration-tag.active');
+    if (!active) return null;
+    if (active.dataset.custom !== undefined) {
+      const input = document.querySelector('.custom-duration input');
+      return input ? parseInt(input.value) || null : null;
+    }
+    return active.textContent;
+  }
+
+  // 获取当前选中的优先级
+  function getSelectedPriority() {
+    const active = document.querySelector('.priority-tag.active-star');
+    return active ? 'star' : 'normal';
+  }
+
+  // 保存事件
+  function saveEvent() {
+    const title = document.getElementById('titleInput').value.trim();
+    if (!title) {
+      // 标题不能为空，聚焦标题输入框
+      document.getElementById('titleInput').focus();
+      document.getElementById('titleInput').style.outline = '2px solid #E85D5D';
+      setTimeout(() => {
+        document.getElementById('titleInput').style.outline = '';
+      }, 1500);
+      return;
+    }
+
+    const dateInput = document.querySelector('.date-field input');
+    const timeInputs = document.querySelectorAll('.time-range input');
+    const notesArea = document.querySelector('.notes-area textarea');
+
+    const eventData = {
+      title: title,
+      type: getSelectedType(),
+      date: dateInput ? dateInput.value : EventStore.todayStr(),
+      startTime: timeInputs[0] ? timeInputs[0].value : null,
+      endTime: timeInputs[1] ? timeInputs[1].value : null,
+      duration: getSelectedDuration(),
+      priority: getSelectedPriority(),
+      notes: notesArea ? notesArea.value.trim() : '',
+      subtasks: tempSubtasks.length > 0 ? tempSubtasks.map(s => ({title: s.title, done: s.done})) : undefined,
+      repeatRule: document.querySelector('.repeat-tag.active-repeat')?.dataset.repeat || 'none'
+    };
+
+    const newEvent = EventStore.createEvent(eventData);
+    console.log('事件已创建:', newEvent);
+
+    // 保存成功提示
+    showToast('🌸 已种下一朵小红花！');
+
+    // 延迟跳转到首页
+    setTimeout(() => {
+      window.location.href = 'xiaohonghua_v8a.html';
+    }, 800);
+  }
+
+  // Toast 提示
+  function showToast(message) {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(74,63,55,0.9);
+      color: #FFF;
+      padding: 12px 24px;
+      border-radius: 20px;
+      font-size: 14px;
+      z-index: 1000;
+      animation: fadeInOut 1.5s ease;
+      pointer-events: none;
+    `;
+    // 添加动画
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeInOut {
+        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.remove();
+      style.remove();
+    }, 1500);
+  }
+
+  // ========== 语音输入功能 ==========
+  const micBtn = document.querySelector('.mic-btn');
+  const voiceTextarea = document.querySelector('.ai-input-row textarea');
+
+  if (micBtn && voiceTextarea && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'zh-CN';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    let isRecording = false;
+
+    micBtn.addEventListener('click', () => {
+      if (isRecording) {
+        recognition.stop();
+        return;
+      }
+
+      // 确保AI面板打开
+      const aiPanel = document.getElementById('aiPanel');
+      const aiTrigger = document.getElementById('aiTrigger');
+      if (aiPanel && !aiPanel.classList.contains('open')) {
+        aiPanel.classList.add('open');
+        if (aiTrigger) aiTrigger.textContent = '收起';
+      }
+
+      recognition.start();
+      isRecording = true;
+      micBtn.style.background = '#E85D5D';
+      micBtn.style.color = '#FFF';
+      micBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      `;
+      voiceTextarea.value = '正在聆听...';
+      voiceTextarea.style.color = '#E85D5D';
+    });
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      voiceTextarea.value = transcript;
+      voiceTextarea.style.color = '#4A3F37';
+    };
+
+    recognition.onend = () => {
+      isRecording = false;
+      micBtn.style.background = '';
+      micBtn.style.color = '';
+      micBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      `;
+      // 解析语音文本
+      parseVoiceInput(voiceTextarea.value);
+    };
+
+    recognition.onerror = (event) => {
+      isRecording = false;
+      micBtn.style.background = '';
+      micBtn.style.color = '';
+      if (event.error === 'not-allowed') {
+        voiceTextarea.value = '请允许麦克风权限';
+        voiceTextarea.style.color = '#E85D5D';
+      } else {
+        voiceTextarea.value = '语音识别失败，请重试';
+        voiceTextarea.style.color = '#E85D5D';
+      }
+    };
+  } else if (micBtn) {
+    // 浏览器不支持语音识别
+    micBtn.addEventListener('click', () => {
+      const aiPanel = document.getElementById('aiPanel');
+      const aiTrigger = document.getElementById('aiTrigger');
+      if (aiPanel && !aiPanel.classList.contains('open')) {
+        aiPanel.classList.add('open');
+        if (aiTrigger) aiTrigger.textContent = '收起';
+      }
+      if (voiceTextarea) {
+        voiceTextarea.value = '当前浏览器不支持语音输入，请手动输入。\n示例：明天下午3点开会，预计1小时';
+        voiceTextarea.style.color = '#8B7E74';
+      }
+    });
+  }
+
+  // 解析语音文本，提取时间和标题
+  function parseVoiceInput(text) {
+    if (!text || text.includes('正在聆听') || text.includes('失败') || text.includes('不允许')) return;
+
+    const titleInput = document.getElementById('titleInput');
+    const dateInput = document.querySelector('.date-field input');
+    const timeInputs = document.querySelectorAll('.time-range input');
+
+    // 提取时间模式：明天/后天/大后天 + 上午/下午/晚上 + 数字点/数字:数字
+    let date = EventStore.todayStr();
+    let startTime = null;
+    let endTime = null;
+    let title = text;
+
+    // 日期解析
+    const today = new Date();
+    if (text.includes('后天')) {
+      const d = new Date(today); d.setDate(d.getDate() + 2);
+      date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      title = title.replace('后天', '');
+    } else if (text.includes('明天')) {
+      const d = new Date(today); d.setDate(d.getDate() + 1);
+      date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      title = title.replace('明天', '');
+    }
+
+    // 时间解析：下午3点 / 上午9点 / 晚上8点 / 10:30
+    const timePatterns = [
+      /(?:下午|晚上)\s*(\d{1,2})\s*[点时]/,
+      /(?:上午|早上|早晨)\s*(\d{1,2})\s*[点时]/,
+      /(\d{1,2})[：:](\d{2})/,
+      /(\d{1,2})\s*[点时]\s*(\d{0,2})\s*[分]?/
+    ];
+
+    let hour = null, minute = 0;
+    for (const pattern of timePatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        hour = parseInt(match[1]);
+        if (match[2]) minute = parseInt(match[2]);
+        // 上午/下午调整
+        if (text.includes('下午') || text.includes('晚上')) {
+          if (hour < 12) hour += 12;
+        }
+        if (hour === 24) hour = 0;
+        break;
+      }
+    }
+
+    if (hour !== null) {
+      startTime = `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`;
+      // 提取时长：预计/大约 + 数字 + 小时/分钟
+      const durationMatch = text.match(/(?:预计|大约|大概|约)\s*(\d+)\s*(小时|个小时|分钟|分)/);
+      if (durationMatch) {
+        const dur = parseInt(durationMatch[1]);
+        const unit = durationMatch[2];
+        const durMin = unit.includes('小时') ? dur * 60 : dur;
+        const [sh, sm] = startTime.split(':').map(Number);
+        const totalMin = sh * 60 + sm + durMin;
+        const eh = Math.floor(totalMin / 60) % 24;
+        const em = totalMin % 60;
+        endTime = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
+      } else {
+        endTime = EventStore.addHour(startTime, 1); // 默认1小时
+      }
+    }
+
+    // 清理标题
+    title = title.replace(/(?:预计|大约|大概|约)\s*\d+\s*(?:小时|个小时|分钟|分)/g, '')
+      .replace(/(?:上午|下午|晚上|早上|早晨)\s*\d{1,2}\s*[点时]/g, '')
+      .replace(/\d{1,2}[：:]\d{2}/g, '')
+      .replace(/\s+/g, ' ').trim();
+
+    if (!title) title = '语音创建的任务';
+
+    // 填充表单
+    if (titleInput) titleInput.value = title;
+    if (dateInput) dateInput.value = date;
+    if (startTime && timeInputs[0]) timeInputs[0].value = startTime;
+    if (endTime && timeInputs[1]) timeInputs[1].value = endTime;
+
+    // 如果有时间，切换为日程类型
+    if (startTime) {
+      const scheduleTab = document.querySelector('.type-tab[data-type="schedule"]');
+      if (scheduleTab) scheduleTab.click();
+      // 触发时长匹配
+      autoMatchDuration?.();
+    }
+
+    showToast('🌸 已识别，请确认后保存');
+  }
+
+  // 绑定保存按钮
+  document.querySelector('.save-btn').addEventListener('click', saveEvent);
+
+  // 绑定悬浮完成按钮
+  document.querySelector('.fab-done').addEventListener('click', saveEvent);
+
+  // 返回按钮
+  document.querySelector('.back-btn').addEventListener('click', () => {
+    window.location.href = 'xiaohonghua_v8a.html';
+  });
+
+  // 设置默认日期（支持URL参数）
+  const createParams = new URLSearchParams(window.location.search);
+  const preDate = createParams.get('date');
+  const dateInput = document.querySelector('.date-field input');
+  if (dateInput) {
+    dateInput.value = preDate || EventStore.todayStr();
+  }
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+</script>
+
+</body>
+</html>

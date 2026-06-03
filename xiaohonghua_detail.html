@@ -642,7 +642,7 @@
   const viewDate = urlParams.get('date') || EventStore.todayStr();
   const scheduleColors = ['schedule-coral','schedule-yellow','schedule-blue','schedule-lavender','schedule-mint','schedule-rose'];
   const HOUR_HEIGHT = 60; // 每小时高度px
-  const TIMELINE_START = 6; // timeline起始小时
+  const TIMELINE_START = 0; // timeline起始小时（与HTML hour-slot从00开始一致）
 
   // 拖拽状态
   let draggedEventId = null;
@@ -1329,12 +1329,31 @@
             ghost.style.top = (touch.clientY - 30) + 'px';
           }
 
-          // 高亮drop target
-          const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-          document.querySelectorAll('.hour-slot, .todo-section').forEach(s => s.style.background = '');
-          const dropTarget = elemBelow?.closest('.hour-slot') || elemBelow?.closest('.todo-section');
-          if (dropTarget) {
-            dropTarget.style.background = 'rgba(232,93,93,0.06)';
+          // 高亮drop target（用Y坐标计算）
+          const timeline = document.querySelector('.timeline-section');
+          const todoSec = document.querySelector('.todo-section');
+          document.querySelectorAll('.hour-slot').forEach(s => s.style.background = '');
+          if (todoSec) todoSec.style.background = '';
+          
+          if (timeline) {
+            const timelineRect = timeline.getBoundingClientRect();
+            const y = touch.clientY - timelineRect.top;
+            const firstSlot = timeline.querySelector('.hour-slot');
+            if (firstSlot) {
+              const firstSlotRect = firstSlot.getBoundingClientRect();
+              const slotOffset = firstSlotRect.top - timelineRect.top;
+              const relY = y - slotOffset;
+              const hourFloat = relY / HOUR_HEIGHT;
+              const hour = Math.floor(hourFloat) + TIMELINE_START;
+              const clampedHour = Math.max(TIMELINE_START, Math.min(23, hour));
+              const targetSlot = timeline.querySelector(`.hour-slot[data-hour="${String(clampedHour).padStart(2,'0')}"]`);
+              if (targetSlot) targetSlot.style.background = 'rgba(232,93,93,0.06)';
+            }
+          }
+          // 检查是否在todo区域
+          const elemBelowMove = document.elementFromPoint(touch.clientX, touch.clientY);
+          if (elemBelowMove?.closest('.todo-section')) {
+            elemBelowMove.closest('.todo-section').style.background = 'rgba(232,93,93,0.06)';
           }
         }, {passive: false});
 
@@ -1350,27 +1369,41 @@
           }
 
           const touch = e.changedTouches[0];
+          const eventId = el.dataset.eventId;
+          const eventType = el.dataset.eventType;
+
+          // 判断是拖到时间轴还是todo区
           const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-          const dropTarget = elemBelow?.closest('.hour-slot') || elemBelow?.closest('.todo-section');
+          const todoSection = elemBelow?.closest('.todo-section');
+          const timelineSection = elemBelow?.closest('.timeline-section');
 
-          if (dropTarget) {
-            const eventId = el.dataset.eventId;
-            const eventType = el.dataset.eventType;
+          if (todoSection && eventType === 'schedule') {
+            // schedule拖到todo区 → 转为todo
+            EventStore.convertToTodo(eventId);
+            renderPage();
+          } else if (timelineSection) {
+            // 拖到时间轴区域 → 用Y坐标计算时间（与鼠标拖拽逻辑一致）
+            const timeline = document.querySelector('.timeline-section');
+            const timelineRect = timeline.getBoundingClientRect();
+            const y = touch.clientY - timelineRect.top;
+            const firstSlot = timeline.querySelector('.hour-slot');
+            if (firstSlot) {
+              const firstSlotRect = firstSlot.getBoundingClientRect();
+              const slotOffset = firstSlotRect.top - timelineRect.top;
+              const relY = y - slotOffset;
+              const hourFloat = relY / HOUR_HEIGHT;
+              const hour = Math.floor(hourFloat) + TIMELINE_START;
+              const clampedHour = Math.max(TIMELINE_START, Math.min(23, hour));
+              const startTime = `${String(clampedHour).padStart(2, '0')}:00`;
+              const endTime = EventStore.addHour(startTime, 1);
 
-            if (dropTarget.classList.contains('hour-slot') && eventType === 'todo') {
-              // todo拖到时间轴 → 转为schedule
-              const hour = dropTarget.dataset.hour;
-              EventStore.convertToSchedule(eventId, hour + ':00', hour + ':00');
-              renderPage();
-            } else if (dropTarget.classList.contains('hour-slot') && eventType === 'schedule') {
-              // schedule在时间轴内拖拽 → 调整时间
-              const hour = dropTarget.dataset.hour;
-              EventStore.moveSchedule(eventId, hour + ':00', addHour(hour + ':00', 1));
-              renderPage();
-            } else if (dropTarget.classList.contains('todo-section') && eventType === 'schedule') {
-              // schedule拖到todo区 → 转为todo
-              EventStore.convertToTodo(eventId);
-              renderPage();
+              if (eventType === 'todo') {
+                EventStore.convertToSchedule(eventId, startTime, endTime);
+                renderPage();
+              } else if (eventType === 'schedule') {
+                EventStore.moveSchedule(eventId, startTime, endTime);
+                renderPage();
+              }
             }
           }
 

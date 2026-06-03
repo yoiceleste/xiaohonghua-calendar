@@ -455,7 +455,7 @@
 
   <!-- Status Bar -->
   <div class="status-bar">
-    <span class="time">9:41</span>
+    <span class="time" id="statusBarTime"></span>
     <div class="icons">
       <svg viewBox="0 0 24 24" fill="#333"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
       <svg viewBox="0 0 24 24" fill="#333"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
@@ -493,8 +493,8 @@
 
     <!-- Left: Timeline -->
     <div class="timeline-section">
-      <!-- Current time indicator (9:41) - positioned within timeline only -->
-      <div class="current-time-line" style="top: 436px;">
+      <!-- Current time indicator - dynamically positioned -->
+      <div class="current-time-line" id="currentTimeLine" style="display:none;">
         <div class="current-time-dot"></div>
       </div>
 
@@ -593,6 +593,10 @@
       </div>
       <div class="hour-slot" data-hour="23">
         <span class="hour-label">23</span>
+        <div class="hour-content"><div class="hour-line"></div></div>
+      </div>
+      <div class="hour-slot" data-hour="24">
+        <span class="hour-label">00</span>
         <div class="hour-content"><div class="hour-line"></div></div>
       </div>
     </div>
@@ -1421,7 +1425,52 @@
     setTimeout(addTouchDragSupport, 100);
   })();
 
+  // ========== 状态栏时间 + 当前时间指示线 ==========
+  function updateCurrentTime() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const timeStr = `${h}:${m}`;
+
+    // 状态栏时间
+    const statusBarTime = document.getElementById('statusBarTime');
+    if (statusBarTime) statusBarTime.textContent = timeStr;
+
+    // 当前时间指示线（只在查看今天时显示）
+    const timeLine = document.getElementById('currentTimeLine');
+    if (timeLine && viewDate === todayStr()) {
+      const totalMinutes = now.getHours() * 60 + now.getMinutes();
+      const topPx = (totalMinutes / 60) * HOUR_HEIGHT;
+      timeLine.style.display = 'block';
+      timeLine.style.top = topPx + 'px';
+    } else if (timeLine) {
+      timeLine.style.display = 'none';
+    }
+  }
+
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // 每分钟更新时间
+  updateCurrentTime();
+  setInterval(updateCurrentTime, 60000);
+
+  // 自动滚动到当前时间（如果是今天）
+  function scrollToCurrentTime() {
+    if (viewDate !== todayStr()) return;
+    const timeline = document.querySelector('.timeline-section');
+    if (!timeline) return;
+    const now = new Date();
+    const totalMinutes = now.getHours() * 60 + now.getMinutes();
+    const topPx = (totalMinutes / 60) * HOUR_HEIGHT;
+    const scrollTo = Math.max(0, topPx - 2 * HOUR_HEIGHT);
+    timeline.scrollTop = scrollTo;
+  }
+
   renderPage();
+  setTimeout(scrollToCurrentTime, 200);
 </script>
 
 <script>

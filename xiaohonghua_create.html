@@ -328,9 +328,11 @@
     font-family: inherit;
     text-align: left;
     padding: 0;
+    letter-spacing: 1px;
   }
-  .time-range input::-webkit-calendar-picker-indicator {
-    opacity: 0.4;
+  .time-range input::placeholder {
+    color: #C8BCB0;
+    letter-spacing: 1px;
   }
   .time-range .dash {
     color: #C8BCB0;
@@ -753,9 +755,9 @@
       <div class="notebook-label">时间</div>
       <div class="notebook-field">
         <div class="time-range">
-          <input type="time" value="09:00">
+          <input type="text" class="time-input" value="09:00" placeholder="09:00" maxlength="5" inputmode="numeric" pattern="\d{2}:\d{2}">
           <span class="dash">—</span>
-          <input type="time" value="10:00">
+          <input type="text" class="time-input" value="10:00" placeholder="10:00" maxlength="5" inputmode="numeric" pattern="\d{2}:\d{2}">
         </div>
         <div class="field-line"></div>
       </div>
@@ -1015,6 +1017,34 @@
   }
   timeInputs.forEach(input => {
     input.addEventListener('change', autoMatchDuration);
+    // 自动格式化时间输入：输入数字时自动插入冒号
+    input.addEventListener('input', () => {
+      let val = input.value.replace(/[^\d]/g, '');
+      if (val.length >= 3) {
+        val = val.slice(0, 2) + ':' + val.slice(2, 4);
+      }
+      input.value = val;
+    });
+    // 失焦时补全格式
+    input.addEventListener('blur', () => {
+      let val = input.value.trim();
+      if (val && !val.includes(':')) {
+        if (val.length <= 2) {
+          val = val.padStart(2, '0') + ':00';
+        } else {
+          val = val.slice(0, 2) + ':' + val.slice(2, 4).padEnd(2, '0');
+        }
+      }
+      // 验证范围
+      if (val.includes(':')) {
+        const [h, m] = val.split(':').map(Number);
+        const validH = Math.max(0, Math.min(23, h || 0));
+        const validM = Math.max(0, Math.min(59, m || 0));
+        val = `${String(validH).padStart(2, '0')}:${String(validM).padStart(2, '0')}`;
+      }
+      input.value = val;
+      autoMatchDuration();
+    });
   });
 
   // Priority tags

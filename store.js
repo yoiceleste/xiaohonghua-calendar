@@ -81,6 +81,35 @@ const EventStore = (() => {
     return load().find(e => e.id === id) || null;
   }
 
+  function updateEvent(id, updates) {
+    const events = load();
+    const event = events.find(e => e.id === id);
+    if (!event) return null;
+
+    const oldDate = event.date;
+    const editableFields = [
+      'title', 'type', 'date', 'startTime', 'endTime', 'duration',
+      'priority', 'notes', 'subtasks', 'repeatRule', 'completedInstances',
+      'status'
+    ];
+
+    editableFields.forEach(field => {
+      if (Object.prototype.hasOwnProperty.call(updates, field)) {
+        event[field] = updates[field];
+      }
+    });
+    event.updatedAt = new Date().toISOString();
+
+    // 更新类型、日期或时间后，新旧日期都需要重新计算冲突。
+    runConflictDetection(events, oldDate);
+    if (event.date !== oldDate) {
+      runConflictDetection(events, event.date);
+    }
+
+    save(events);
+    return event;
+  }
+
   function toggleStatus(id) {
     const events = load();
     const event = events.find(e => e.id === id);
@@ -573,6 +602,7 @@ const EventStore = (() => {
     createEvent,
     getAll,
     getById,
+    updateEvent,
     toggleStatus,
     undoComplete,
     deleteEvent,

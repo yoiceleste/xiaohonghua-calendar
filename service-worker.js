@@ -3,7 +3,7 @@
  * 缓存策略：Cache First（静态资源），Network First（HTML页面）
  */
 
-const CACHE_NAME = 'xiaohonghua-v1';
+const CACHE_NAME = 'xiaohonghua-v2';
 
 // 需要缓存的静态资源
 const STATIC_ASSETS = [

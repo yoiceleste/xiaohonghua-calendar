@@ -834,7 +834,7 @@
   </div>
 </div>
 
-<script src="store.js?v=3"></script>
+<script src="store.js?v=4"></script>
 <script>
   // ========== 首页动态渲染（v8a） ==========
 
@@ -1114,6 +1114,18 @@
 
   // 初始化
   renderPage();
+
+  // 从详情页返回时，浏览器可能直接恢复旧的页面 DOM（bfcache），
+  // PWA 从后台恢复也不会重新执行初始化脚本，需要主动读取最新数据。
+  window.addEventListener('pageshow', () => {
+    renderPage();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) renderPage();
+  });
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'little-red-flower-calendar-v1') renderPage();
+  });
 
   // ========== 状态栏时间 ==========
   function updateStatusTime() {

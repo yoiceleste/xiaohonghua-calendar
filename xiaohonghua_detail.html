@@ -638,7 +638,7 @@
 
 </div>
 
-<script src="store.js?v=3"></script>
+<script src="store.js?v=4"></script>
 <script>
   // ========== 日视图 + 日程引擎 ==========
 
@@ -1209,28 +1209,27 @@
 
     // 保存
     document.getElementById('detailSaveBtn').addEventListener('click', () => {
-      const events = EventStore.getAll();
-      const ev = events.find(e => e.id === eventId);
-      if (!ev) return;
-      ev.title = document.getElementById('detailTitleInput').value.trim() || ev.title;
-      ev.date = document.getElementById('detailDateInput').value || ev.date;
-      ev.type = editState.type;
-      ev.priority = editState.priority;
-      ev.status = editState.status;
-      if (ev.type === 'schedule') {
+      const title = document.getElementById('detailTitleInput').value.trim();
+      const date = document.getElementById('detailDateInput').value;
+      const updates = {
+        title: title || event.title,
+        date: date || event.date,
+        type: editState.type,
+        priority: editState.priority,
+        status: editState.status
+      };
+
+      if (updates.type === 'schedule') {
         const startInput = document.getElementById('detailStartInput');
         const endInput = document.getElementById('detailEndInput');
-        ev.startTime = startInput ? startInput.value || null : null;
-        ev.endTime = endInput ? endInput.value || null : null;
+        updates.startTime = startInput ? startInput.value || null : null;
+        updates.endTime = endInput ? endInput.value || null : null;
       } else {
-        ev.startTime = null;
-        ev.endTime = null;
+        updates.startTime = null;
+        updates.endTime = null;
       }
-      // 重新检测冲突
-      if (ev.type === 'schedule' && ev.startTime) {
-        EventStore.runConflictDetection(events, ev.date);
-      }
-      localStorage.setItem('xiaohonghua_events', JSON.stringify(events));
+
+      EventStore.updateEvent(eventId, updates);
       overlay.remove();
       renderPage();
     });
